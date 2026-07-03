@@ -96,12 +96,19 @@ git push origin main
 
 ## Part 3: Organizer Cleanup Guide
 
-Once the hackathon is finished, clean up the resources to free cluster quotas:
+Once the hackathon is finished, you can cleanly delete the entire setup (including dynamically created builds and leftover pods) and prepare for a fresh install by running the automated cleanup script:
+
+```bash
+./reset.sh
+```
+
+Alternatively, you can clean up resources manually:
 
 ```bash
 # Uninstall the Helm release
 helm uninstall workshop-poc
 
-# Verify all pods have terminated
-oc get pods
+# Clean up leftover build resources
+oc delete builds -l app.kubernetes.io/name=workshop
+oc delete pods -l openshift.io/build.name
 ```
