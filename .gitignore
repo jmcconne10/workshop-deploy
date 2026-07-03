@@ -19,3 +19,9 @@ Thumbs.db
 .env
 .env.*
 
+# Local branding assets (embedded into app.py at build time, not tracked)
+ng-logo.png
+
+# Scratch / temp working directories
+scratch/
+
