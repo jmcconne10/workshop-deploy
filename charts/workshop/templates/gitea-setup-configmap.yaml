@@ -42,26 +42,13 @@ data:
     fi
     echo "Default branch is ${DEFAULT_BRANCH}"
 
-    # Generate base64 content for starter Flask app files
-    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > /tmp/app.py
-    from flask import Flask
-    app = Flask(__name__)
+    # Pre-encoded base64 content for starter Flask app files (avoids shell indentation issues)
+    # app.py: from flask import Flask; app=Flask(__name__); @app.route('/'); def hello(): return "Hello from OpenShift Hackathon!"; app.run(host='0.0.0.0', port=8080)
+    APP_PY_B64="ZnJvbSBmbGFzayBpbXBvcnQgRmxhc2sKYXBwID0gRmxhc2soX19uYW1lX18pCgpAYXBwLnJvdXRlKCIvIikKZGVmIGhlbGxvKCk6CiAgICByZXR1cm4gIkhlbGxvIGZyb20gT3BlblNoaWZ0IEhhY2thdGhvbiEiCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgYXBwLnJ1bihob3N0PSIwLjAuMC4wIiwgcG9ydD04MDgwKQo="
 
-    @app.route('/')
-    def hello():
-        return "Hello from OpenShift Hackathon!"
+    # requirements.txt: Flask==3.0.3
+    REQ_TXT_B64="Rmxhc2s9PTMuMC4zCg=="
 
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=8080)
-    EOF
-
-    APP_PY_B64=$(cat /tmp/app.py | base64 | tr -d '\n' | tr -d '\r')
-
-    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > /tmp/requirements.txt
-    Flask==3.0.3
-    EOF
-
-    REQ_TXT_B64=$(cat /tmp/requirements.txt | base64 | tr -d '\n' | tr -d '\r')
 
     echo "Uploading app.py to ${DEFAULT_BRANCH}..."
     curl -s -f -u "${ADMIN_USER}:${ADMIN_PASS}" \
