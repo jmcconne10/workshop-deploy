@@ -5,6 +5,8 @@ metadata:
   labels:
     {{- include "workshop.labels" . | nindent 4 }}
     environment: dev
+  annotations:
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"{{ include "workshop.fullname" . }}-dev:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"app\")].image"}]'
 spec:
   replicas: {{ .Values.starterApp.dev.replicas | default 1 }}
   selector:
