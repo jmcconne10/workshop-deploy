@@ -1,0 +1,59 @@
+---
+type: rules
+title: Workshop Deployment Project Guardrails
+description: Non-negotiable Git workflows, cluster safety rules, autonomy boundaries, and code quality standards for the workshop-deploy project.
+---
+
+# Agent Guardrails & Workflows
+
+## Git Workflow — Non-Negotiable
+
+- **NEVER commit directly to `main`.** All work happens on feature branches.
+- **Branch naming:** `feature/<short-description>` (e.g., `feature/gitea-deployment`, `fix/buildconfig-webhook`).
+- One feature branch per logical unit of work. Keep branches small and focused.
+- Commit early and often within a feature branch with clear, descriptive, conventional commit messages (e.g., `feat: Add Gitea deployment template`, `fix: Correct service port`).
+- When a feature is complete and tested, stop and present a summary of all changes on the branch for **human review and approval before merging to `main`**.
+- The human approves at the **feature-branch/merge level** — you do NOT need approval for individual commits or small changes within a branch. Work autonomously within the branch.
+- Never force-push, never rewrite history on `main`, never delete branches without confirmation.
+
+---
+
+## Autonomy Boundaries
+
+Work autonomously (no approval needed) for:
+- Creating/editing files within a feature branch.
+- Running `helm lint`, `helm template`, and dry-run validations.
+- Running read-only cluster commands (`oc get`, `oc describe`, `oc logs`, `oc status`).
+- Iterating on templates until validation passes.
+
+Stop and ask for approval before:
+- Merging any branch into `main`.
+- Running destructive cluster commands (`oc delete`, `helm uninstall`, anything that removes resources).
+- Installing/upgrading to the live sandbox (`helm install` / `helm upgrade`) — the human runs these or explicitly approves.
+- Changing resource requests/limits upward.
+- Adding new external dependencies, images, or charts not already discussed.
+
+---
+
+## Cluster Safety
+
+- **Red Hat Developer Sandbox Constraints:** Assume the target namespace has strict quotas. Set explicit, small resource requests/limits on every container (e.g., Gitea ~100m CPU / 256Mi memory; Flask app ~50m CPU / 128Mi memory) and restrict replica counts to 1.
+- **Secret Management:** Never store credentials, tokens, or kubeconfig contents in the repository. Use Kubernetes Secrets and load local values via a `.env` file (which is ignored by Git).
+- **Namespace-Relative Manifests:** All manifests must be namespace-relative — never hard-code the sandbox namespace; take it from Helm values or the release namespace.
+- **No Cluster-Scoped Resources:** Do not create ClusterRoles, ClusterRoleBindings, or any cluster-scoped resources as the sandbox permissions will forbid them.
+
+---
+
+## Code & Chart Quality
+
+- **Conventional Structure:** Keep Helm charts structured conventionally (`Chart.yaml`, `values.yaml`, `templates/`, with `NOTES.txt`).
+- **Configurability:** Every configurable item (image tags, resource limits, Gitea admin user, repo names, hostnames) belongs in `values.yaml` with sane sandbox-sized defaults.
+- **Validation:** Always validate manifests with `helm lint` and `helm template` before proposing or executing deployments.
+- **Documentation:** Maintain a running `README.md` in the repository covering prerequisites, installation commands, manual testing flows, and teardown commands.
+
+---
+
+## Scope Discipline
+
+- **POC Boundary:** Build ONLY the POC scope (one project namespace, Gitea, starter repo, Flask dev/prod deployments, BuildConfigs with webhooks).
+- Do not build multi-team support, RBAC schemes, monitoring stacks, or complex CI/CD pipelines unless explicitly requested. Record future ideas in `FUTURE.md`.
