@@ -1,0 +1,99 @@
+# =====================================================================
+# Enterprise OpenShift & Nexus Configuration Override (values-enterprise.yaml)
+# Use this file to override defaults when deploying to the internal system:
+#   helm install workshop-poc charts/workshop -f values-enterprise.yaml
+# =====================================================================
+
+global:
+  # Explicitly override the namespace if required, otherwise takes the release namespace
+  namespaceOverride: ""
+
+# ---------------------------------------------------------------------
+# Gitea Enterprise Customizations
+# ---------------------------------------------------------------------
+gitea:
+  enabled: true
+  image:
+    # Point to the internal Nexus container registry instead of Docker Hub
+    repository: nexus.company.com/repository/docker-hub/gitea/gitea
+    tag: 1.22.0-rootless
+    pullPolicy: IfNotPresent
+    # Define image pull secret if Nexus requires authentication
+    pullSecrets:
+      - name: nexus-registry-credentials
+
+  service:
+    type: ClusterIP
+    port: 3000
+    sshPort: 2222
+
+  # Scale up resources for enterprise load (more teams/repos)
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  persistence:
+    enabled: true
+    size: 20Gi  # Scale up storage capacity for multi-team usage
+    # Set to your internal cluster's Persistent Volume storage class
+    # (e.g., gp3, thin, ocs-storagecluster-cephfs, portworx)
+    storageClass: "gp3"
+
+  admin:
+    username: workshop-admin
+    # Ensure a secure, custom password is set for production
+    password: "SecureEnterprisePassword123!"
+    email: admin@company.com
+
+# ---------------------------------------------------------------------
+# Starter Flask Application (Production Scale-Up)
+# ---------------------------------------------------------------------
+starterApp:
+  image:
+    pullPolicy: IfNotPresent
+  dev:
+    name: dev-app
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  prod:
+    name: prod-app
+    # Scale production instance to multiple replicas for high-availability
+    replicas: 3
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+# ---------------------------------------------------------------------
+# BuildConfigs & S2I Configurations
+# ---------------------------------------------------------------------
+build:
+  # Point to the S2I python image hosted in the internal Nexus registry
+  builderImage: nexus.company.com/repository/container-images/ubi8/python-39:latest
+  
+  # Image Pull Secrets for pulling builder images from private Nexus
+  pullSecrets:
+    - name: nexus-registry-credentials
+    
+  # Retain history of builds (can be increased slightly for active debugging)
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  
+  # Name of starter repo
+  repoName: starter-flask-app
+  
+  # Change this to a secure, unique token for triggering BuildConfigs
+  webhookSecret: "enterprise-webhook-token-xyz-12345"
