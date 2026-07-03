@@ -66,8 +66,14 @@ spec:
                   - /bin/sh
                   - -c
                   - |
-                    sleep 3
-                    gitea admin user create --admin --username {{ .Values.gitea.admin.username | quote }} --password {{ .Values.gitea.admin.password | quote }} --email {{ .Values.gitea.admin.email | quote }} --must-change-password=false || true
+                    for i in $(seq 1 30); do
+                      if gitea admin user create --admin --username {{ .Values.gitea.admin.username | quote }} --password {{ .Values.gitea.admin.password | quote }} --email {{ .Values.gitea.admin.email | quote }} --must-change-password=false; then
+                        echo "Admin user created successfully."
+                        break
+                      fi
+                      echo "Database not ready yet. Retrying in 2 seconds..."
+                      sleep 2
+                    done
           volumeMounts:
             - name: gitea-data
               mountPath: /var/lib/gitea
