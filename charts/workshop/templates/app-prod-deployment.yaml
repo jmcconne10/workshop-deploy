@@ -34,6 +34,9 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              value: prod
           resources:
             {{- toYaml .Values.starterApp.prod.resources | nindent 12 }}
           # Simple liveness/readiness probes checking port 8080
