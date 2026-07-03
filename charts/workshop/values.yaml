@@ -1,0 +1,68 @@
+# Global Configuration
+global:
+  # The OpenShift namespace is dynamically determined, but can be overridden here if needed.
+  namespaceOverride: ""
+
+# Gitea configuration
+gitea:
+  enabled: true
+  image:
+    repository: gitea/gitea
+    tag: 1.22.0-rootless
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+    sshPort: 2222
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  admin:
+    username: workshop-admin
+    # Sane default password for the admin account
+    password: "WorkshopAdminPassword123!"
+    email: admin@example.com
+
+# Starter Flask Application Configuration
+starterApp:
+  image:
+    pullPolicy: IfNotPresent
+  dev:
+    name: dev-app
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  prod:
+    name: prod-app
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+# Build and S2I Configuration
+build:
+  # The Python builder image used by OpenShift S2I build.
+  # Using ubi8/python-39 as a lightweight builder.
+  builderImage: registry.redhat.io/ubi8/python-39:latest
+  # History limits for S2I builds to conserve space/quota.
+  successfulBuildsHistoryLimit: 2
+  failedBuildsHistoryLimit: 2
+  # Repo name inside Gitea
+  repoName: starter-flask-app

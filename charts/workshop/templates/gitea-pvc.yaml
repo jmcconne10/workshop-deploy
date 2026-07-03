@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "workshop.fullname" . }}-gitea
+  labels:
+    {{- include "workshop.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.gitea.persistence.size | default "1Gi" | quote }}
+  {{- if .Values.gitea.persistence.storageClass }}
+  storageClassName: {{ .Values.gitea.persistence.storageClass | quote }}
+  {{- end }}

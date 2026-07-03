@@ -1,0 +1,12 @@
+1. Get the Gitea URL by running:
+  oc get route {{ include "workshop.fullname" . }}-gitea -o jsonpath='https://{.spec.host}{"\n"}'
+
+2. Gitea Admin Credentials:
+  Username: {{ .Values.gitea.admin.username }}
+  Password: {{ .Values.gitea.admin.password }}
+
+3. Get the Dev App URL (once deployed):
+  oc get route {{ include "workshop.fullname" . }}-dev-app -o jsonpath='https://{.spec.host}{"\n"}'
+
+4. Get the Prod App URL (once deployed):
+  oc get route {{ include "workshop.fullname" . }}-prod-app -o jsonpath='https://{.spec.host}{"\n"}'

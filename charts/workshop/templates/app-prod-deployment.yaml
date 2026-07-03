@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "workshop.fullname" . }}-prod
+  labels:
+    {{- include "workshop.labels" . | nindent 4 }}
+    environment: prod
+spec:
+  replicas: {{ .Values.starterApp.prod.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "workshop.name" . }}-prod
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ include "workshop.name" . }}-prod
+    spec:
+      containers:
+        - name: app
+          # Resolves to the local prod ImageStream due to lookupPolicy.local=true
+          image: {{ include "workshop.fullname" . }}-prod:latest
+          imagePullPolicy: {{ .Values.starterApp.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.starterApp.prod.resources | nindent 12 }}
+          # Simple liveness/readiness probes checking port 8080
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
