@@ -34,12 +34,14 @@ spec:
               containerPort: 2222
               protocol: TCP
           env:
+            - name: GITEA_APP_INI
+              value: "/var/lib/gitea/gitea.ini"
             - name: GITEA__security__INSTALL_LOCK
               value: "true"
             - name: GITEA__database__DB_TYPE
               value: "sqlite3"
             - name: GITEA__database__PATH
-              value: "/data/gitea/gitea.db"
+              value: "/var/lib/gitea/gitea.db"
             - name: GITEA__server__HTTP_PORT
               value: "3000"
             - name: GITEA__server__SSH_PORT
@@ -57,9 +59,18 @@ spec:
               value: {{ .Values.gitea.admin.email | quote }}
           resources:
             {{- toYaml .Values.gitea.resources | nindent 12 }}
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    sleep 3
+                    gitea admin user create --admin --username {{ .Values.gitea.admin.username | quote }} --password {{ .Values.gitea.admin.password | quote }} --email {{ .Values.gitea.admin.email | quote }} --must-change-password=false || true
           volumeMounts:
             - name: gitea-data
-              mountPath: /data
+              mountPath: /var/lib/gitea
           livenessProbe:
             httpGet:
               path: /
