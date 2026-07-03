@@ -19,9 +19,9 @@ spec:
     spec:
       containers:
         - name: app
-          # Resolves to the local prod ImageStream due to lookupPolicy.local=true
-          image: {{ include "workshop.fullname" . }}-prod:latest
-          imagePullPolicy: {{ .Values.starterApp.image.pullPolicy }}
+          # Full internal registry path so the node resolves directly from the OpenShift registry
+          image: image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}/{{ include "workshop.fullname" . }}-prod:latest
+          imagePullPolicy: Always
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
