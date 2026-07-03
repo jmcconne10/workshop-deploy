@@ -4,6 +4,10 @@ metadata:
   name: {{ include "workshop.fullname" . }}-gitea
   labels:
     {{- include "workshop.labels" . | nindent 4 }}
+  {{- if .Values.gitea.persistence.keepOnUninstall }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce

@@ -33,11 +33,11 @@ This document tracks the iterative tasks remaining to finalize and validate the 
   - Prod app live at: `https://workshop-poc-prod-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com` → `Hello from OpenShift Hackathon!`
 
 ## Phase 4: Hardening & Sandbox Optimization
-- [ ] **Configure PVC Retain/Cleanup:**
+- [x] **Configure PVC Retain/Cleanup:**
   - Verify that `helm uninstall` cleanly removes the PVC or leaves it depending on requirements.
-- [ ] **Prune Build History:**
+- [x] **Prune Build History:**
   - Ensure sandbox quotas are respected by validating that old builds are pruned according to our `successfulBuildsHistoryLimit: 2` settings.
-- [ ] **Add Future Enhancements to `FUTURE.md`:**
+- [x] **Add Future Enhancements to `FUTURE.md`:**
   - Document post-POC ideas (such as multi-team tenancy, automated team onboarding, and enterprise registry integration).
 
 ## Phase 5: Code Review & Merging

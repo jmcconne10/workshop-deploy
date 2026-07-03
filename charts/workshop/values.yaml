@@ -34,6 +34,7 @@ gitea:
     enabled: true
     size: 1Gi
     storageClass: ""
+    keepOnUninstall: false
   admin:
     username: workshop-admin
     # Sane default password for the admin account
