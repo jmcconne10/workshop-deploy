@@ -13,14 +13,15 @@ else
     echo "Helm release 'workshop-poc' is not installed. Skipping uninstall."
 fi
 
-# 2. Delete untracked runtime builds and build pods
-echo "Deleting dynamically created build history and pods..."
+# 2. Delete untracked runtime builds, build pods, and hook jobs
+echo "Deleting dynamically created build history, pods, and jobs..."
 oc delete builds -l app.kubernetes.io/name=workshop --ignore-not-found=true
 oc delete pods -l openshift.io/build.name --ignore-not-found=true
+oc delete jobs -l app.kubernetes.io/name=workshop --ignore-not-found=true
 
-# 3. Verify deletion
+# 3. Verify deletion (avoiding 'oc get all' which is restricted in Developer Sandbox)
 echo "Verifying namespace status..."
-oc get all -l app.kubernetes.io/name=workshop
+oc get pods,svc,route,deployment,bc,builds,job,pvc,secret -l app.kubernetes.io/name=workshop --ignore-not-found=true
 
 echo "=== Cleanup Complete ==="
 echo "To stand the environment back up, run:"
