@@ -40,7 +40,7 @@ data:
     echo "Default branch is ${DEFAULT_BRANCH}"
 
     # Generate base64 content for starter Flask app files
-    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > app.py
+    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > /tmp/app.py
     from flask import Flask
     app = Flask(__name__)
 
@@ -52,13 +52,13 @@ data:
         app.run(host='0.0.0.0', port=8080)
     EOF
 
-    APP_PY_B64=$(cat app.py | base64 | tr -d '\n' | tr -d '\r')
+    APP_PY_B64=$(cat /tmp/app.py | base64 | tr -d '\n' | tr -d '\r')
 
-    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > requirements.txt
+    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > /tmp/requirements.txt
     Flask==3.0.3
     EOF
 
-    REQ_TXT_B64=$(cat requirements.txt | base64 | tr -d '\n' | tr -d '\r')
+    REQ_TXT_B64=$(cat /tmp/requirements.txt | base64 | tr -d '\n' | tr -d '\r')
 
     echo "Uploading app.py to ${DEFAULT_BRANCH}..."
     curl -s -f -u "${ADMIN_USER}:${ADMIN_PASS}" \
