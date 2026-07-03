@@ -2,31 +2,35 @@
 
 This document tracks the iterative tasks remaining to finalize and validate the OpenShift Hackathon Workshop Proof of Concept.
 
-## Phase 1: Starter App Code Injection (Current Focus)
-- [ ] **Inject Starter Files via Gitea API:**
-  - Update the Gitea post-install setup script ([gitea-setup-configmap.yaml](file:///Users/joemcconnell/Documents/Code/workshop-deploy/charts/workshop/templates/gitea-setup-configmap.yaml)) to call Gitea's Content API (`POST /api/v1/repos/{owner}/{repo}/contents/{filepath}`) to write the initial files:
-    - [ ] `app.py` (Simple Flask application listening on port `8080`)
-    - [ ] `requirements.txt` (Flask dependency)
-  - This ensures that when the Helm chart is installed, the Git repository is pre-populated with running starter code on both `main` and `dev` branches.
-- [ ] **Deploy & Verify Injection:**
-  - Redeploy the Helm chart and verify that Gitea initializes the repository with the code, allowing the initial BuildConfigs to run successfully.
+## Phase 1: Starter App Code Injection ✅ COMPLETE
+- [x] **Inject Starter Files via Gitea API:**
+  - Updated the Gitea post-install setup script ([gitea-setup-configmap.yaml](file:///Users/joemcconnell/Documents/Code/workshop-deploy/charts/workshop/templates/gitea-setup-configmap.yaml)) to call Gitea's Content API to write the initial files using pre-encoded base64 (to avoid shell indentation issues):
+    - [x] `app.py` (Simple Flask application listening on port `8080`)
+    - [x] `requirements.txt` (Flask dependency)
+  - Both branches (`main` and `dev`) are pre-populated on install.
+- [x] **Deploy & Verify Injection:**
+  - Redeployed the Helm chart and verified Gitea initializes the repository with starter code.
 
-## Phase 2: Webhook Trigger & Build Validation
-- [ ] **Verify Webhook Delivery:**
-  - Push a manual change to Gitea's `dev` branch and confirm that the Gitea webhook triggers the OpenShift generic webhook on `bc/workshop-poc-dev`.
-  - Check the Gitea webhook delivery log (in the Gitea UI: Repository Settings -> Webhooks) and confirm a `200 OK` or `201 Created` status from `kubernetes.default.svc`.
-- [ ] **Verify S2I Build Execution:**
-  - Verify that the S2I build starts automatically and compiles the Python application.
-  - Fix any build-time issues (e.g., missing dependencies, builder image access).
-- [ ] **Verify Rolling Update:**
-  - Check that the `workshop-poc-dev` deployment automatically rolls out the new image once the build finishes.
+## Phase 2: Webhook Trigger & Build Validation ✅ COMPLETE
+- [x] **Verify Webhook Delivery:**
+  - Fixed multiple Gitea webhook issues:
+    - Added `GITEA__webhook__ALLOWED_HOST_LIST: "*"` to allow internal calls
+    - Added `GITEA__webhook__SKIP_TLS_VERIFY: true` for self-signed certs
+    - Switched webhook URL to external API server with Bearer token auth header
+  - Push to `dev` branch now successfully triggers `bc/workshop-poc-dev`
+- [x] **Verify S2I Build Execution:**
+  - `workshop-poc-dev-2` built successfully from `ubi8/python-39` S2I builder.
+- [x] **Verify Rolling Update:**
+  - `workshop-poc-dev` deployment rolled out with new image; pod `1/1 Running`.
+  - Dev app live at: `https://workshop-poc-dev-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com` → `Hello from OpenShift Hackathon!`
 
-## Phase 3: Production Merge Flow Validation
-- [ ] **Simulate Merge to Main:**
-  - Simulate a pull request merge in Gitea from `dev` to `main` (or a direct push to `main`).
-  - Verify that Gitea fires the production webhook.
-- [ ] **Verify Prod Build & Deploy:**
-  - Check that `bc/workshop-poc-prod` builds successfully and updates the production deployment.
+## Phase 3: Production Merge Flow Validation ✅ COMPLETE
+- [x] **Simulate Merge to Main:**
+  - Merged `dev` → `main` in the internal Gitea repo; prod webhook fired automatically.
+- [x] **Verify Prod Build & Deploy:**
+  - `workshop-poc-prod-1` built and pushed successfully.
+  - `workshop-poc-prod` deployment rolled out; pod `1/1 Running`.
+  - Prod app live at: `https://workshop-poc-prod-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com` → `Hello from OpenShift Hackathon!`
 
 ## Phase 4: Hardening & Sandbox Optimization
 - [ ] **Configure PVC Retain/Cleanup:**
@@ -40,3 +44,4 @@ This document tracks the iterative tasks remaining to finalize and validate the 
 - [ ] Push all local changes to the feature branch.
 - [ ] Submit the branch for human review.
 - [ ] Merge the approved `feature/environment-setup` branch into `main`.
+
