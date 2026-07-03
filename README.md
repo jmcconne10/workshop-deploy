@@ -9,6 +9,11 @@ This repository contains the Helm chart and configurations for deploying a self-
    ```bash
    oc login --token=<TOKEN> --server=<SERVER_URL>
    ```
+   Alternatively, you can load variables from your local `.env` file (which is ignored by Git):
+   ```bash
+   export $(grep -v '^#' .env | xargs)
+   oc login --token=$OPENSHIFT_TOKEN --server=$OPENSHIFT_SERVER
+   ```
 
 ---
 
