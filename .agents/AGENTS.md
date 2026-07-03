@@ -11,10 +11,29 @@ description: Non-negotiable Git workflows, cluster safety rules, autonomy bounda
 - **NEVER commit directly to `main`.** All work happens on feature branches.
 - **Branch naming:** `feature/<short-description>` (e.g., `feature/gitea-deployment`, `fix/buildconfig-webhook`).
 - One feature branch per logical unit of work. Keep branches small and focused.
-- Commit early and often within a feature branch with clear, descriptive, conventional commit messages (e.g., `feat: Add Gitea deployment template`, `fix: Correct service port`).
+- Commit early and often within a feature branch.
+- **Auto-push and Publish:** Immediately after completing any major task or phase of work (such as the initial environment setup, Gitea deployment, or S2I BuildConfig setup), the agent MUST push the commits to GitHub and publish the branch if it is not already tracked remotely. Do not wait for the end of the conversation or the merge approval stage to push code.
 - When a feature is complete and tested, stop and present a summary of all changes on the branch for **human review and approval before merging to `main`**.
 - The human approves at the **feature-branch/merge level** — you do NOT need approval for individual commits or small changes within a branch. Work autonomously within the branch.
 - Never force-push, never rewrite history on `main`, never delete branches without confirmation.
+
+---
+
+## Commit Message Guidelines
+
+All commit messages must follow the **Conventional Commits** standard to ensure the git log remains clean and readable:
+
+- **Format:** `<type>: <description>` (e.g., `feat: add Gitea service template`).
+- **Standard Types:**
+  - `feat`: A new resource, manifest, or feature block.
+  - `fix`: A bug fix, correction, or namespace adjustments.
+  - `docs`: Documentation edits (like `README.md` or `FUTURE.md`).
+  - `chore`: Tooling setup, configuration, or environment scripts.
+- **Rule of Writing:**
+  - Use the **imperative mood** (e.g., "Add Gitea deployment template" instead of "Added..." or "Adds...").
+  - Do not capitalize the first letter of the description.
+  - Do not end the commit message with a period.
+  - Explain *what* and *why* in the commit message (e.g., `fix: update Gitea mount path to fix permission errors`).
 
 ---
 
