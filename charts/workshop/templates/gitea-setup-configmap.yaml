@@ -51,9 +51,11 @@ data:
 
 
     echo "Uploading app.py to ${DEFAULT_BRANCH}..."
+    # Format the payload safely via printf to write directly to file, escaping JSON properly
+    printf '{"branch": "%s", "content": "%s", "message": "feat: add app.py starter code"}' "${DEFAULT_BRANCH}" "${APP_PY_B64}" > /tmp/app_payload.json
     curl -s -f -u "${ADMIN_USER}:${ADMIN_PASS}" \
       -H "Content-Type: application/json" \
-      -d "{\"branch\": \"${DEFAULT_BRANCH}\", \"content\": \"${APP_PY_B64}\", \"message\": \"feat: add app.py starter code\"}" \
+      --data-binary @/tmp/app_payload.json \
       "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/contents/app.py" || echo "app.py might already exist."
 
     echo "Uploading requirements.txt to ${DEFAULT_BRANCH}..."
