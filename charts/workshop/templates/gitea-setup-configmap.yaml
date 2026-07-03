@@ -39,6 +39,39 @@ data:
     fi
     echo "Default branch is ${DEFAULT_BRANCH}"
 
+    # Generate base64 content for starter Flask app files
+    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > app.py
+    from flask import Flask
+    app = Flask(__name__)
+
+    @app.route('/')
+    def hello():
+        return "Hello from OpenShift Hackathon!"
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=8080)
+    EOF
+
+    APP_PY_B64=$(cat app.py | base64 | tr -d '\n' | tr -d '\r')
+
+    cat << 'EOF' | sed 's/^[[:space:]]\{4\}//' > requirements.txt
+    Flask==3.0.3
+    EOF
+
+    REQ_TXT_B64=$(cat requirements.txt | base64 | tr -d '\n' | tr -d '\r')
+
+    echo "Uploading app.py to ${DEFAULT_BRANCH}..."
+    curl -s -f -u "${ADMIN_USER}:${ADMIN_PASS}" \
+      -H "Content-Type: application/json" \
+      -d "{\"branch\": \"${DEFAULT_BRANCH}\", \"content\": \"${APP_PY_B64}\", \"message\": \"feat: add app.py starter code\"}" \
+      "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/contents/app.py" || echo "app.py might already exist."
+
+    echo "Uploading requirements.txt to ${DEFAULT_BRANCH}..."
+    curl -s -f -u "${ADMIN_USER}:${ADMIN_PASS}" \
+      -H "Content-Type: application/json" \
+      -d "{\"branch\": \"${DEFAULT_BRANCH}\", \"content\": \"${REQ_TXT_B64}\", \"message\": \"feat: add requirements.txt dependencies\"}" \
+      "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/contents/requirements.txt" || echo "requirements.txt might already exist."
+
     # Create dev branch from default branch
     echo "Creating dev branch..."
     curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
