@@ -3,6 +3,15 @@ global:
   # The OpenShift namespace is dynamically determined, but can be overridden here if needed.
   namespaceOverride: ""
 
+# OpenShift Cluster Configuration
+openshift:
+  # External API server URL (e.g. https://api.rm3.7wse.p1.openshiftapps.com:6443)
+  # Used by the Gitea webhook to call the BuildConfig trigger endpoint.
+  apiServer: "https://api.rm3.7wse.p1.openshiftapps.com:6443"
+  # OC login token — loaded from the Secret 'workshop-poc-oc-token'.
+  # Do NOT set this here; set it via: --set openshift.token=<token> or a Secret.
+  token: ""
+
 # Gitea configuration
 gitea:
   enabled: true
@@ -66,3 +75,5 @@ build:
   failedBuildsHistoryLimit: 2
   # Repo name inside Gitea
   repoName: starter-flask-app
+  # Webhook secret used in the BuildConfig generic webhook URL path
+  webhookSecret: "secretwebhooktoken123"

@@ -50,6 +50,10 @@ spec:
               value: "true"
             - name: GITEA__server__OFFLINE_MODE
               value: "true"
+            - name: GITEA__webhook__ALLOWED_HOST_LIST
+              value: "*"
+            - name: GITEA__webhook__SKIP_TLS_VERIFY
+              value: "true"
             # Admin credentials configured via Helm values
             - name: GITEA__admin__USER
               value: {{ .Values.gitea.admin.username | quote }}

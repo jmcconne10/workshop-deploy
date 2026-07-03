@@ -30,8 +30,14 @@ spec:
           volumeMounts:
             - name: script-vol
               mountPath: /mnt
+            - name: oc-token-vol
+              mountPath: /mnt/oc-token
+              readOnly: true
       volumes:
         - name: script-vol
           configMap:
             name: {{ include "workshop.fullname" . }}-gitea-setup
             defaultMode: 0755
+        - name: oc-token-vol
+          secret:
+            secretName: {{ include "workshop.fullname" . }}-oc-token

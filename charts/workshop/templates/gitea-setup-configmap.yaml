@@ -18,6 +18,9 @@ data:
     ADMIN_PASS="{{ .Values.gitea.admin.password }}"
     REPO_NAME="{{ .Values.build.repoName }}"
     NAMESPACE="{{ .Release.Namespace }}"
+    OC_API_SERVER="{{ .Values.openshift.apiServer }}"
+    # Token read from mounted secret volume (set via --set openshift.token=...)
+    OC_TOKEN="$(cat /mnt/oc-token/token 2>/dev/null || echo '')"
 
     echo "Waiting for Gitea to be ready..."
     until curl -s -f "${GITEA_URL}/api/v1/swagger" > /dev/null; do
@@ -79,20 +82,20 @@ data:
       -d "{\"new_branch_name\": \"dev\", \"old_branch_name\": \"${DEFAULT_BRANCH}\"}" \
       "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/branches" || echo "Branch dev might already exist."
 
-    # Webhook URLs pointing to the BuildConfig generic triggers
-    DEV_WEBHOOK_URL="https://kubernetes.default.svc/apis/build.openshift.io/v1/namespaces/${NAMESPACE}/buildconfigs/{{ include "workshop.fullname" . }}-dev/webhooks/{{ .Values.build.webhookSecret | default "secretwebhooktoken123" }}/generic"
-    PROD_WEBHOOK_URL="https://kubernetes.default.svc/apis/build.openshift.io/v1/namespaces/${NAMESPACE}/buildconfigs/{{ include "workshop.fullname" . }}-prod/webhooks/{{ .Values.build.webhookSecret | default "secretwebhooktoken123" }}/generic"
+    # Webhook URLs pointing to the BuildConfig generic triggers via external API server
+    DEV_WEBHOOK_URL="${OC_API_SERVER}/apis/build.openshift.io/v1/namespaces/${NAMESPACE}/buildconfigs/{{ include "workshop.fullname" . }}-dev/webhooks/{{ .Values.build.webhookSecret | default "secretwebhooktoken123" }}/generic"
+    PROD_WEBHOOK_URL="${OC_API_SERVER}/apis/build.openshift.io/v1/namespaces/${NAMESPACE}/buildconfigs/{{ include "workshop.fullname" . }}-prod/webhooks/{{ .Values.build.webhookSecret | default "secretwebhooktoken123" }}/generic"
 
     echo "Registering dev webhook in Gitea..."
     curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
       -H "Content-Type: application/json" \
-      -d "{\"type\": \"gitea\", \"config\": {\"url\": \"${DEV_WEBHOOK_URL}\", \"content_type\": \"json\", \"skip_verify\": \"1\"}, \"events\": [\"push\"], \"branch_filter\": \"dev\", \"active\": true}" \
+      -d "{\"type\": \"gitea\", \"config\": {\"url\": \"${DEV_WEBHOOK_URL}\", \"content_type\": \"json\", \"skip_verify\": \"1\"}, \"authorization_header\": \"Bearer ${OC_TOKEN}\", \"events\": [\"push\"], \"branch_filter\": \"dev\", \"active\": true}" \
       "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/hooks" || echo "Dev webhook registration failed or already registered."
 
     echo "Registering prod webhook in Gitea..."
     curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
       -H "Content-Type: application/json" \
-      -d "{\"type\": \"gitea\", \"config\": {\"url\": \"${PROD_WEBHOOK_URL}\", \"content_type\": \"json\", \"skip_verify\": \"1\"}, \"events\": [\"push\"], \"branch_filter\": \"${DEFAULT_BRANCH}\", \"active\": true}" \
+      -d "{\"type\": \"gitea\", \"config\": {\"url\": \"${PROD_WEBHOOK_URL}\", \"content_type\": \"json\", \"skip_verify\": \"1\"}, \"authorization_header\": \"Bearer ${OC_TOKEN}\", \"events\": [\"push\"], \"branch_filter\": \"${DEFAULT_BRANCH}\", \"active\": true}" \
       "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/hooks" || echo "Prod webhook registration failed or already registered."
 
     echo "Gitea setup completed successfully!"
