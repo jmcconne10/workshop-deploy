@@ -43,6 +43,61 @@ Provide the Gitea URL and the corresponding App URLs to the participants.
 
 ---
 
+## Part 1B: Batch Provisioning for Multi-Team Workshops
+
+Steps 1–4 above stand up a single deployment. For a real workshop with multiple teams
+(up to ~20), use `orchestrate/provision_workshop.py` instead — it creates one isolated
+namespace and one full stack per team, then generates a per-team handout plus a master
+roster of every team's URLs and credentials.
+
+**This targets a real enterprise OpenShift cluster, not the Developer Sandbox** — a
+sandbox account only gets one namespace and its quotas aren't sized for 20 concurrent
+stacks. See [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md) for cluster prerequisites
+(registry secrets, storage class, etc.) before running this at scale.
+
+1. **Install the script's dependency:**
+   ```bash
+   pip install -r orchestrate/requirements.txt
+   ```
+2. **Copy the example roster and fill in your event's details** (this file is
+   gitignored — never commit real cluster/participant details):
+   ```bash
+   cp orchestrate/teams.example.yaml orchestrate/teams.local.yaml
+   ```
+   Edit `cluster.apiServer`, `cluster.valuesFile`, `cluster.namespacePrefix`, and the
+   `teams` list (one `id` + `displayName` per team).
+3. **Log in to the target cluster and set the webhook auth token** (same token model
+   as the single-deployment flow — see Prerequisites above):
+   ```bash
+   oc login --token=<YOUR_TOKEN> --server=<YOUR_ENTERPRISE_SERVER>
+   export OC_TOKEN=<YOUR_TOKEN>
+   ```
+4. **Dry-run first** to sanity-check the commands it would run, with no cluster changes:
+   ```bash
+   python orchestrate/provision_workshop.py orchestrate/teams.local.yaml --dry-run
+   ```
+5. **Smoke-test with 2–3 teams** before committing to the full roster — trim the
+   `teams` list temporarily, or keep a separate small test file. Confirm each team's
+   namespace, routes, and handout look right.
+6. **Run for real** once satisfied:
+   ```bash
+   python orchestrate/provision_workshop.py orchestrate/teams.local.yaml
+   ```
+   Per-team handouts land in `orchestrate/output/teams.local/handouts/`, and the
+   master roster (all teams' URLs + credentials) in
+   `orchestrate/output/teams.local/roster.md` / `roster.csv`. These are gitignored —
+   treat them as sensitive files for the duration of the event.
+7. **Tear everything down** after the workshop:
+   ```bash
+   python orchestrate/provision_workshop.py orchestrate/teams.local.yaml --teardown
+   ```
+
+**Before running the full batch:** multiply `values-enterprise.yaml`'s per-team
+resource requests by your team count and check against the target cluster's actual
+available capacity — this is real infrastructure, not free sandbox quota.
+
+---
+
 ## Part 2: Participant Development Guide
 
 As a hackathon participant, you will push your application code to Gitea. The platform will automatically compile it, build a container image, and deploy it to OpenShift. **You never have to touch OpenShift directly.**

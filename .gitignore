@@ -25,3 +25,8 @@ ng-logo.png
 # Scratch / temp working directories
 scratch/
 
+# Batch workshop provisioning: real rosters and generated output contain live
+# participant data and per-team credentials — never commit these.
+orchestrate/teams.local.yaml
+orchestrate/output/
+

@@ -47,19 +47,21 @@ Before installing the Helm chart, configure your namespace with the necessary re
 
 Edit the template [values-enterprise.yaml](file:///Users/joemcconnell/Documents/Code/workshop-deploy/values-enterprise.yaml) in the root of the project to match your infrastructure requirements:
 
-1. **Registry Domains:** Update the repository URLs to point to your Nexus domain (e.g. `nexus.company.com`).
-2. **Storage Class:** Set `gitea.persistence.storageClass` to your company's storage provisioner (e.g. `gp3`, `thin`, `ocs-storagecluster-cephfs`).
-3. **Resource Scale:** Customize CPU/Memory requests and limits to fit your team size.
-4. **Replicas:** Set production application replica count to high availability levels (e.g., `replicas: 3`).
+1. **API Server (required):** Set `openshift.apiServer` to your enterprise cluster's API server URL. This ships blank in `values-enterprise.yaml` on purpose — if left unset, the Gitea webhook has no valid target and build triggers will fail. Pass it explicitly, e.g. `--set openshift.apiServer=https://api.openshift.company.com:6443`.
+2. **Registry Domains:** Update the repository URLs to point to your Nexus domain (e.g. `nexus.company.com`).
+3. **Storage Class:** Set `gitea.persistence.storageClass` to your company's storage provisioner (e.g. `gp3`, `thin`, `ocs-storagecluster-cephfs`).
+4. **Resource Scale:** Customize CPU/Memory requests and limits to fit your team size.
+5. **Replicas:** Set production application replica count to high availability levels (e.g., `replicas: 3`).
 
 ---
 
 ## Step 3: Install the Helm Chart
 
-Run the Helm installation command from the repository root, passing the enterprise values file:
+Run the Helm installation command from the repository root, passing the enterprise values file and your API server:
 
 ```bash
-helm install workshop-poc charts/workshop -f values-enterprise.yaml
+helm install workshop-poc charts/workshop -f values-enterprise.yaml \
+  --set openshift.apiServer=https://api.openshift.company.com:6443
 ```
 
 ---
