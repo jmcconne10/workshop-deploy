@@ -15,7 +15,9 @@ description: Non-negotiable Git workflows, cluster safety rules, autonomy bounda
 - **Auto-push and publish:** Immediately after completing any major task or phase of work (such as the initial environment setup, Gitea deployment, or S2I BuildConfig setup), push the commits to GitHub and publish the branch if it is not already tracked remotely. Do not wait for the end of the conversation or the merge approval stage to push code. This applies to feature branches only — pushing to `main` is blocked at the permission layer regardless (see `.claude/settings.json`), so there's nothing to reason about there.
 - When a feature is complete and tested, stop and present a summary of all changes on the branch for **human review and approval before merging to `main`**.
 - The human approves at the **feature-branch/merge level** — you do NOT need approval for individual commits or small changes within a branch. Work autonomously within the branch.
-- Never force-push, never rewrite history on `main`, never delete branches without confirmation.
+- Never force-push, never rewrite history on `main`. Deleting `main`/`master` itself is
+  blocked at the permission layer no matter what (see `.claude/settings.json`) — other
+  branches (e.g. after a merge is done) can be deleted without asking first.
 
 ---
 
