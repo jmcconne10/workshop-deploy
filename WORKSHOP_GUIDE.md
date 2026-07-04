@@ -18,6 +18,10 @@ There are two ways to stand this up, depending on what you're running:
 
 ## Part 1: Organizer Setup Guide (Single Deployment)
 
+**Audience: the person deploying the environment.** Participants don't need anything
+in this section — they get their own instructions via the generated handout (see
+Part 2 below).
+
 ### 1. Prerequisites
 Before deploying, make sure you have:
 * The OpenShift CLI (`oc`) and Helm CLI (`helm`) installed.
@@ -64,6 +68,9 @@ echo "Prod Web Site URL: $(oc get route workshop-poc-prod -o jsonpath='https://{
 ---
 
 ## Part 1B: Organizer Setup Guide (Batch / Multi-Team Workshops)
+
+**Audience: the person deploying the environments.** Same as Part 1 — nothing here is
+meant for participants; they get their own per-team handout automatically.
 
 Use this instead of Part 1 when you're running a real workshop with multiple teams
 (up to ~20). It uses `orchestrate/provision_workshop.py` to create one isolated
@@ -125,52 +132,26 @@ available capacity — this is real infrastructure, not free sandbox quota.
 
 ## Part 2: Participant Development Guide
 
-As a hackathon participant, you will push your application code to Gitea. The platform will automatically compile it, build a container image, and deploy it to OpenShift. **You never have to touch OpenShift directly.**
+**Audience: hackathon participants — not the organizer.** This isn't something you
+walk participants through by hand: it's the content they already receive
+automatically in their generated handout (`HANDOUT.md` from Part 1, or their team's
+`team-<id>-handout.md` from Part 1B). It's documented here so you know what
+participants are being told without having to go dig it out of a template file.
 
-### 1. Clone the Starter Code
-Clone the repository initialized for you in Gitea:
-```bash
-git clone <GITEA_URL>/workshop-admin/starter-flask-app.git
-cd starter-flask-app
-```
-*Note: Enter the username `workshop-admin` and password `WorkshopAdminPassword123!` (or the credentials provided by the organizer) when prompted.*
+In short, a participant:
 
-### 2. View the Starter Code
-The repository is pre-populated with:
-* `app.py`: A simple Flask web application.
-* `requirements.txt`: Python package dependencies.
+1. **Clones their starter repo** from Gitea using the URL and credentials in their
+   handout — pre-populated with `app.py` (a simple Flask app) and `requirements.txt`.
+2. **Pushes changes to the `dev` branch** → OpenShift automatically builds and
+   deploys the update to their **Dev Web Site**.
+3. **Merges `dev` into `main` and pushes** → OpenShift automatically builds and
+   deploys the update to their **Prod Web Site**.
 
-### 3. Develop & Deploy to Dev
-Checkout to the `dev` branch, modify the code, and push:
-```bash
-# Ensure you are on the dev branch
-git checkout dev
-
-# Make your edits to app.py (e.g., change the return message)
-# Commit and push your changes
-git add app.py
-git commit -m "feat: customize web page message"
-git push origin dev
-```
-
-**What happens next:**
-* OpenShift automatically detects the push and starts building a new version of your application.
-* Once the build completes, the **Dev Web Site URL** automatically updates with your new changes.
-
-### 4. Release to Production
-When your app is fully tested and ready for production, merge the code to `main` and push:
-```bash
-# Checkout main and merge dev
-git checkout main
-git merge dev
-
-# Push main to Gitea
-git push origin main
-```
-
-**What happens next:**
-* OpenShift detects the push to `main` and triggers the Production build.
-* Once completed, your live application is updated on the **Prod Web Site URL**.
+They never touch OpenShift directly. The exact commands and wording sent to
+participants live in the handout templates, not here — edit those if you want to
+change what participants are told:
+* [`generate-handout.sh`](generate-handout.sh) (single deployment, Part 1)
+* [`orchestrate/templates/handout.md.tmpl`](orchestrate/templates/handout.md.tmpl) (batch, Part 1B)
 
 ---
 
