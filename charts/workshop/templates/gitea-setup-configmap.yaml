@@ -86,4 +86,39 @@ data:
       -d "{\"type\": \"gitea\", \"config\": {\"url\": \"${PROD_WEBHOOK_URL}\", \"content_type\": \"json\", \"skip_verify\": \"1\"}, \"authorization_header\": \"Bearer ${OC_TOKEN}\", \"events\": [\"push\"], \"branch_filter\": \"${DEFAULT_BRANCH}\", \"active\": true}" \
       "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/hooks" || echo "Prod webhook registration failed or already registered."
 
+    # The app.py/requirements.txt seeded above went in via Gitea's Contents API, not a
+    # real `git push` — so the webhooks just registered have nothing to retroactively
+    # fire on. Without an explicit first trigger here, dev/prod would never get a build
+    # and their Deployments would sit in ImagePullBackOff forever. Fire the same generic
+    # build-trigger URLs directly, the way Gitea itself would on a push.
+    trigger_initial_build() {
+      url="$1"
+      label="$2"
+      attempt=1
+      http_code="000"
+      while [ "$attempt" -le 3 ]; do
+        http_code=$(curl -s -o /dev/null -w '%{http_code}' -k -X POST \
+          -H "Authorization: Bearer ${OC_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d '{}' \
+          "${url}" 2>/dev/null || echo "000")
+        case "${http_code}" in
+          2??)
+            echo "Triggered initial ${label} build (HTTP ${http_code})."
+            return 0
+            ;;
+        esac
+        attempt=$((attempt + 1))
+        sleep 3
+      done
+      echo "Could not trigger initial ${label} build (last HTTP ${http_code}); it may need a manual 'oc start-build'."
+      return 0
+    }
+
+    echo "Triggering initial dev build..."
+    trigger_initial_build "${DEV_WEBHOOK_URL}" "dev"
+
+    echo "Triggering initial prod build..."
+    trigger_initial_build "${PROD_WEBHOOK_URL}" "prod"
+
     echo "Gitea setup completed successfully!"
