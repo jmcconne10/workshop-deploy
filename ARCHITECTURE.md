@@ -45,6 +45,10 @@ release (`charts/workshop`):
 charts/workshop/
   Chart.yaml
   values.yaml                    # sandbox-sized defaults
+  files/
+    starter-app/
+      app.py                      # starter Flask website source (edit this directly)
+      requirements.txt
   templates/
     _helpers.tpl                 # name/label helpers
     NOTES.txt                    # post-install output (route names, admin creds)
@@ -53,7 +57,7 @@ charts/workshop/
     gitea-service.yaml
     gitea-route.yaml
     gitea-pvc.yaml
-    gitea-setup-configmap.yaml   # setup.sh script + base64-embedded starter app files
+    gitea-setup-configmap.yaml   # setup.sh script; embeds files/starter-app/* as base64
     gitea-setup-job.yaml         # runs setup.sh (post-install hook)
     imagestreams.yaml            # dev + prod ImageStreams
     buildconfigs.yaml            # dev + prod S2I BuildConfigs + webhook secret
@@ -69,8 +73,10 @@ Three resources are annotated as `helm.sh/hook: post-install`, ordered by
 
 1. **weight `"0"`** — `<fullname>-oc-token` Secret: stores `.Values.openshift.token`
    (passed via `--set openshift.token=...`, never committed to the repo).
-2. **weight `"1"`** — `<fullname>-gitea-setup` ConfigMap: contains `setup.sh` and the
-   pre-encoded base64 payloads for the starter app's `app.py` / `requirements.txt`.
+2. **weight `"1"`** — `<fullname>-gitea-setup` ConfigMap: contains `setup.sh`, which
+   embeds `charts/workshop/files/starter-app/app.py` and `requirements.txt` as base64
+   (via Helm's `.Files.Get` + `b64enc` at render time — the source files themselves are
+   normal, editable text, not hand-encoded).
 3. **weight `"2"`** — `<fullname>-gitea-setup` Job: mounts the ConfigMap as a script and
    the token Secret as a volume, then runs `setup.sh` (image: `curlimages/curl`).
 
@@ -85,8 +91,9 @@ hookless resources first, then runs post-install hooks in weight order.
 3. Reads the repo's actual default branch (`main` or `master` depending on Gitea's
    config) rather than assuming a name.
 4. Uploads `app.py` and `requirements.txt` to that default branch via the Gitea
-   Contents API (base64 payloads embedded in the ConfigMap to sidestep shell
-   quoting/indentation issues).
+   Contents API, which expects file content as base64 — the ConfigMap carries the
+   pre-encoded payload (built from `files/starter-app/` at `helm template`/`install`
+   time) so the Job itself never needs a base64 decode/encode step, only `curl`.
 5. Creates a `dev` branch from the default branch.
 6. Registers two Gitea webhooks against the **external OpenShift API server**
    (`.Values.openshift.apiServer`), pointed at each BuildConfig's generic webhook
