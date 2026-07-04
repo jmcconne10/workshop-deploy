@@ -1,0 +1,132 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git checkout -b *)",
+      "Bash(git switch -c *)",
+      "Bash(git push *)",
+
+      "Bash(pytest *)",
+      "Bash(python -m pytest *)",
+      "Bash(flask *)",
+      "Bash(python -m flake8 *)",
+      "Bash(python -m black *)",
+
+      "Bash(helm lint *)",
+      "Bash(helm template *)",
+      "Bash(helm diff *)",
+
+      "Bash(oc get *)",
+      "Bash(oc describe *)",
+      "Bash(oc logs *)",
+      "Bash(oc status)",
+      "Bash(kubectl get *)",
+      "Bash(kubectl describe *)",
+      "Bash(kubectl logs *)"
+    ],
+
+    "ask": [
+      "Bash(git rebase *)",
+      "Bash(git merge *)",
+
+      "Bash(pip install *)",
+      "Bash(pip uninstall *)",
+
+      "Bash(rm *)",
+      "Bash(mv *)",
+
+      "Bash(helm install *)",
+      "Bash(helm upgrade *)",
+      "Bash(helm uninstall *)",
+      "Bash(helm rollback *)",
+
+      "Bash(oc apply *)",
+      "Bash(oc delete *)",
+      "Bash(oc create *)",
+      "Bash(oc rollout *)",
+      "Bash(kubectl apply *)",
+      "Bash(kubectl delete *)",
+      "Bash(kubectl create *)",
+
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ],
+
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/kubeconfig*)",
+
+      "Bash(git push origin main)",
+      "Bash(git push origin master)",
+      "Bash(git push * main)",
+      "Bash(git push * master)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(git branch -D *)",
+      "Bash(rm -rf *)",
+
+      "Bash(curl * | bash)",
+      "Bash(curl * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(wget * | sh)"
+    ],
+
+    "additionalDirectories": [],
+    "defaultMode": "default"
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/format-and-scan.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/pretest-stop.sh\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -31,3 +31,7 @@ orchestrate/teams.local.yaml
 orchestrate/output/
 orchestrate/.venv/
 
+# Claude Code: settings.json is shared project config (commit it); settings.local.json
+# is personal per-developer permission overrides and should never be committed.
+.claude/settings.local.json
+
