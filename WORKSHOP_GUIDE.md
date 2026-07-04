@@ -34,9 +34,14 @@ oc login --token=<YOUR_TOKEN> --server=<YOUR_SERVER_URL>
 ```
 
 ### 3. Deploy the Environment
-Deploy the Gitea server, starter repository, BuildConfigs, and routing templates using Helm:
+Deploy the Gitea server, starter repository, BuildConfigs, and routing templates using Helm.
+`openshift.apiServer`/`openshift.token` are required — without them, Gitea's webhook and
+the chart's automatic initial-build trigger both get an HTTP 403 from the API server
+(an empty token is treated as anonymous) and the dev/prod sites never get a build:
 ```bash
-helm install workshop-poc charts/workshop
+helm install workshop-poc charts/workshop \
+  --set openshift.apiServer=$(oc whoami --show-server) \
+  --set openshift.token=$(oc whoami -t)
 ```
 
 ### 4. Retrieve URLs & Generate the Attendee Handout

@@ -21,10 +21,15 @@ For a technical breakdown of the chart's resources and the install/build/deploy 
 
 ## Deployment
 
-Deploy the entire environment (Gitea, starter repo, BuildConfigs, and Flask app routes) with a single command:
+Deploy the entire environment (Gitea, starter repo, BuildConfigs, and Flask app routes) with a single command.
+`openshift.apiServer`/`openshift.token` are required — without them, Gitea's webhook and
+the chart's automatic initial-build trigger both get an HTTP 403 from the API server
+(an empty token is treated as anonymous), so the dev/prod sites never get a build:
 
 ```bash
-helm install workshop-poc charts/workshop
+helm install workshop-poc charts/workshop \
+  --set openshift.apiServer=$(oc whoami --show-server) \
+  --set openshift.token=$(oc whoami -t)
 ```
 
 ### Post-Install Automation
