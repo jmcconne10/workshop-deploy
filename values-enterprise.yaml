@@ -56,7 +56,6 @@ starterApp:
   image:
     pullPolicy: IfNotPresent
   dev:
-    name: dev-app
     replicas: 1
     resources:
       requests:
@@ -66,7 +65,6 @@ starterApp:
         cpu: 500m
         memory: 512Mi
   prod:
-    name: prod-app
     # Scale production instance to multiple replicas for high-availability
     replicas: 3
     resources:

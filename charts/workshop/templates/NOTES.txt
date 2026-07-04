@@ -6,7 +6,7 @@
   Password: {{ .Values.gitea.admin.password }}
 
 3. Get the Dev App URL (once deployed):
-  oc get route {{ include "workshop.fullname" . }}-dev-app -o jsonpath='https://{.spec.host}{"\n"}'
+  oc get route {{ include "workshop.fullname" . }}-dev -o jsonpath='https://{.spec.host}{"\n"}'
 
 4. Get the Prod App URL (once deployed):
-  oc get route {{ include "workshop.fullname" . }}-prod-app -o jsonpath='https://{.spec.host}{"\n"}'
+  oc get route {{ include "workshop.fullname" . }}-prod -o jsonpath='https://{.spec.host}{"\n"}'
