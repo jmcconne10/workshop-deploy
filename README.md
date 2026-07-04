@@ -2,6 +2,8 @@
 
 This repository contains the Helm chart and configurations for deploying a self-contained, automated workshop environment on the **Red Hat Developer Sandbox**.
 
+For a technical breakdown of the chart's resources and the install/build/deploy flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Prerequisites
 
 1. **CLI Tools:** Ensure you have the OpenShift client (`oc`) and `helm` installed.

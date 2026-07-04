@@ -46,7 +46,6 @@ starterApp:
   image:
     pullPolicy: IfNotPresent
   dev:
-    name: dev-app
     replicas: 1
     resources:
       requests:
@@ -56,7 +55,6 @@ starterApp:
         cpu: 200m
         memory: 256Mi
   prod:
-    name: prod-app
     replicas: 1
     resources:
       requests:
