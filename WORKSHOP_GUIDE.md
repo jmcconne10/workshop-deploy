@@ -50,6 +50,11 @@ it queries the three routes for you and writes a ready-to-share `HANDOUT.md`:
 
 Share the generated `HANDOUT.md` with the participant.
 
+The Dev/Prod routes above will be reachable as soon as the setup job finishes, but the
+starter app itself won't render for another ~1-2 minutes while the chart's automatic
+initial build finishes — if you check immediately and see an error page, that's
+expected; run `oc get builds` to confirm one is in progress.
+
 <details>
 <summary>Just need the URLs yourself, without generating a handout?</summary>
 

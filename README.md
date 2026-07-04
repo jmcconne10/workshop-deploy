@@ -33,6 +33,7 @@ The Helm chart includes a post-install hook Job that:
 2. Creates a public repository named `starter-flask-app` under the `workshop-admin` account.
 3. Automatically sets up the `dev` branch.
 4. Configures Gitea webhooks to trigger the respective OpenShift S2I BuildConfigs for `dev` (pushed to `dev`) and `prod` (pushed to the default branch).
+5. Fires each BuildConfig's webhook trigger once directly, so the initial `dev`/`prod` images build automatically — the app.py/requirements.txt seeded above went in via Gitea's API rather than a real push, so there'd otherwise be no first build for the webhooks to react to.
 
 ---
 
