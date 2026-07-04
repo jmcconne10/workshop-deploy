@@ -35,8 +35,20 @@ Deploy the Gitea server, starter repository, BuildConfigs, and routing templates
 helm install workshop-poc charts/workshop
 ```
 
-### 4. Retrieve URLs & Admin Credentials
-Wait about 1–2 minutes for the setup job to run, then retrieve the hostnames:
+### 4. Retrieve URLs & Generate the Attendee Handout
+Wait about 1–2 minutes for the setup job to run, then run the handout generator —
+it queries the three routes for you and writes a ready-to-share `HANDOUT.md`:
+```bash
+./generate-handout.sh
+```
+* **Gitea Admin Username:** `workshop-admin`
+* **Gitea Admin Password:** `WorkshopAdminPassword123!`
+
+Share the generated `HANDOUT.md` with the participant.
+
+<details>
+<summary>Just need the URLs yourself, without generating a handout?</summary>
+
 ```bash
 # Retrieve Gitea UI URL
 echo "Gitea URL: $(oc get route workshop-poc-gitea -o jsonpath='https://{.spec.host}')"
@@ -47,11 +59,7 @@ echo "Dev Web Site URL: $(oc get route workshop-poc-dev -o jsonpath='https://{.s
 # Retrieve Prod Environment App URL
 echo "Prod Web Site URL: $(oc get route workshop-poc-prod -o jsonpath='https://{.spec.host}')"
 ```
-
-* **Gitea Admin Username:** `workshop-admin`
-* **Gitea Admin Password:** `WorkshopAdminPassword123!`
-
-Provide the Gitea URL and the corresponding App URLs to the participants.
+</details>
 
 ---
 
