@@ -1,6 +1,6 @@
 # Hackathon Attendee Quick-Start Guide
 
-Welcome to the OpenShift Hackathon! Below are your connection details, repository URL, and live environment websites.
+Welcome to the Hackathon, sponsored by the EKHO Team! Below are your connection details, repository URL, and live environment websites.
 
 ---
 
