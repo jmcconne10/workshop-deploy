@@ -1,0 +1,26 @@
+# Example roster config for provision_workshop.py.
+#
+# Copy this file (e.g. to teams.local.yaml — already gitignored) and fill in real
+# values for your event. Never commit a copy that contains real cluster details or
+# participant names.
+
+cluster:
+  # Your enterprise OpenShift cluster's API server. Passed to every team's release as
+  # openshift.apiServer so each team's Gitea webhook calls the right cluster.
+  apiServer: "https://api.openshift.company.com:6443"
+
+  # Values file used for every team's `helm install -f <valuesFile>`.
+  valuesFile: "values-enterprise.yaml"
+
+  # Namespace naming: results in "<namespacePrefix>-team-<id>", e.g. hackathon-team-01.
+  namespacePrefix: "hackathon"
+
+# One entry per team/participant. `id` should be short and filesystem/DNS-safe
+# (lowercase letters, digits, hyphens) since it's used in namespace and release names.
+teams:
+  - id: "01"
+    displayName: "Team Rocket"
+  - id: "02"
+    displayName: "Team Falcon"
+  - id: "03"
+    displayName: "Team Phoenix"

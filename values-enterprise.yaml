@@ -9,6 +9,16 @@ global:
   namespaceOverride: ""
 
 # ---------------------------------------------------------------------
+# OpenShift Cluster Configuration
+# ---------------------------------------------------------------------
+openshift:
+  # REQUIRED: set to your enterprise cluster's API server. If left as the chart
+  # default (the Developer Sandbox's API server), the Gitea webhook will call the
+  # wrong cluster and silently fail to trigger builds. Always pass explicitly, e.g.
+  #   --set openshift.apiServer=https://api.openshift.company.com:6443
+  apiServer: ""
+
+# ---------------------------------------------------------------------
 # Gitea Enterprise Customizations
 # ---------------------------------------------------------------------
 gitea:

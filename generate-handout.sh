@@ -20,7 +20,7 @@ CLONE_URL="https://${GITEA_HOST}/workshop-admin/starter-flask-app.git"
 cat << EOF > HANDOUT.md
 # Hackathon Attendee Quick-Start Guide
 
-Welcome to the OpenShift Hackathon! Below are your connection details, repository URL, and live environment websites.
+Welcome to the Hackathon, sponsored by the EKHO Team! Below are your connection details, repository URL, and live environment websites.
 
 ---
 
@@ -49,18 +49,27 @@ cd starter-flask-app
 *(When prompted, enter the username \`workshop-admin\` and password \`WorkshopAdminPassword123!\`)*
 
 ### Step 2: Make Edits & Deploy to Dev
+If this is your first time using git on this machine, set your identity once:
+\`\`\`bash
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+\`\`\`
+
 To test changes, work on the \`dev\` branch:
 \`\`\`bash
 # Switch to dev branch
 git checkout dev
 
-# Make changes to app.py (e.g., update the welcome message)
+# Make changes to app.py (e.g., edit the hero heading text or the
+# "Trigger Action" button label inside HTML_TEMPLATE)
 
 # Commit and push
 git add app.py
-git commit -m "feat: updated website greeting"
+git commit -m "feat: customize the starter site"
 git push origin dev
 \`\`\`
+*(You'll be prompted for your Gitea username/password again for this push — same credentials as the clone step.)*
+
 *Once pushed, OpenShift will automatically build and update your **Dev Web Site** in ~1-2 minutes.*
 
 ### Step 3: Release to Production

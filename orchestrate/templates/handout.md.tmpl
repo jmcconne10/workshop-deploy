@@ -1,32 +1,34 @@
-# Hackathon Attendee Quick-Start Guide
+# Hackathon Attendee Quick-Start Guide — $display_name
 
-Welcome to the Hackathon, sponsored by the EKHO Team! Below are your connection details, repository URL, and live environment websites.
+Welcome to the Hackathon, sponsored by the EKHO Team! Below are your connection
+details, repository URL, and live environment websites.
 
 ---
 
 ## 1. Environment URLs
 
-* **Gitea Code Repository Web UI:** [https://workshop-poc-gitea-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com](https://workshop-poc-gitea-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com)
-* **Your Dev Web Site:** [https://workshop-poc-dev-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com](https://workshop-poc-dev-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com)
-* **Your Prod Web Site:** [https://workshop-poc-prod-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com](https://workshop-poc-prod-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com)
+* **Gitea Code Repository Web UI:** [$gitea_url]($gitea_url)
+* **Your Dev Web Site:** [$dev_url]($dev_url)
+* **Your Prod Web Site:** [$prod_url]($prod_url)
 
 ### Gitea Login Credentials
-* **Username:** `workshop-admin`
-* **Password:** `WorkshopAdminPassword123!`
+* **Username:** `$admin_user`
+* **Password:** `$admin_password`
 
 ---
 
 ## 2. Working with Your Code
 
-The deployment platform automatically builds and deploys your code. You do not need to touch OpenShift.
+The deployment platform automatically builds and deploys your code. You do not need
+to touch OpenShift.
 
 ### Step 1: Clone the Repository
 Clone your project's starter code from Gitea:
 ```bash
-git clone https://workshop-poc-gitea-joseph-mcconnell-dev.apps.rm3.7wse.p1.openshiftapps.com/workshop-admin/starter-flask-app.git
+git clone $clone_url
 cd starter-flask-app
 ```
-*(When prompted, enter the username `workshop-admin` and password `WorkshopAdminPassword123!`)*
+*(When prompted, enter the username `$admin_user` and password `$admin_password`)*
 
 ### Step 2: Make Edits & Deploy to Dev
 If this is your first time using git on this machine, set your identity once:
