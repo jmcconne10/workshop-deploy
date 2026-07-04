@@ -29,4 +29,5 @@ scratch/
 # participant data and per-team credentials — never commit these.
 orchestrate/teams.local.yaml
 orchestrate/output/
+orchestrate/.venv/
 

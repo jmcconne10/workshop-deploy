@@ -76,10 +76,14 @@ sandbox account only gets one namespace and its quotas aren't sized for 20 concu
 stacks. See [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md) for cluster prerequisites
 (registry secrets, storage class, etc.) before running this at scale.
 
-1. **Install the script's dependency:**
+1. **Create a virtual environment and install the script's dependency:**
    ```bash
+   python3 -m venv orchestrate/.venv
+   source orchestrate/.venv/bin/activate
    pip install -r orchestrate/requirements.txt
    ```
+   `orchestrate/.venv/` is gitignored. Re-run the `source` line (only) to reactivate
+   it in a new shell — no need to recreate it or reinstall dependencies each time.
 2. **Copy the example roster and fill in your event's details** (this file is
    gitignored — never commit real cluster/participant details):
    ```bash
