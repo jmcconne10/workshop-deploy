@@ -2,9 +2,21 @@
 
 This guide is split into instructions for the **Workshop Organizer** (infrastructure setup and teardown) and the **Hackathon Participants** (developing and deploying code).
 
+## Which setup do I need?
+
+There are two ways to stand this up, depending on what you're running:
+
+* **A single deployment** — one Gitea + dev + prod stack, e.g. for testing the chart
+  or a one-person session. Follow **Part 1: Organizer Setup Guide (Single Deployment)**
+  below.
+* **A real multi-team workshop** (up to ~20 teams) — one fully isolated stack per
+  team, provisioned in one batch, with a handout generated per team and a master
+  roster of every team's URLs and credentials. Skip ahead to
+  **Part 1B: Organizer Setup Guide (Batch / Multi-Team Workshops)**.
+
 ---
 
-## Part 1: Organizer Setup Guide
+## Part 1: Organizer Setup Guide (Single Deployment)
 
 ### 1. Prerequisites
 Before deploying, make sure you have:
@@ -43,12 +55,13 @@ Provide the Gitea URL and the corresponding App URLs to the participants.
 
 ---
 
-## Part 1B: Batch Provisioning for Multi-Team Workshops
+## Part 1B: Organizer Setup Guide (Batch / Multi-Team Workshops)
 
-Steps 1–4 above stand up a single deployment. For a real workshop with multiple teams
-(up to ~20), use `orchestrate/provision_workshop.py` instead — it creates one isolated
+Use this instead of Part 1 when you're running a real workshop with multiple teams
+(up to ~20). It uses `orchestrate/provision_workshop.py` to create one isolated
 namespace and one full stack per team, then generates a per-team handout plus a master
-roster of every team's URLs and credentials.
+roster of every team's URLs and credentials — no need to repeat Part 1 by hand for
+each team.
 
 **This targets a real enterprise OpenShift cluster, not the Developer Sandbox** — a
 sandbox account only gets one namespace and its quotas aren't sized for 20 concurrent
@@ -151,7 +164,14 @@ git push origin main
 
 ## Part 3: Organizer Cleanup Guide
 
-Once the hackathon is finished, you can cleanly delete the entire setup (including dynamically created builds and leftover pods) and prepare for a fresh install by running the automated cleanup script:
+**Ran a multi-team batch (Part 1B)?** Don't use the steps below — tear down every
+team's namespace and release with the batch script's teardown mode instead (Part 1B,
+step 7):
+```bash
+python orchestrate/provision_workshop.py orchestrate/teams.local.yaml --teardown
+```
+
+The rest of this section is for a single deployment (Part 1). Once the hackathon is finished, you can cleanly delete the entire setup (including dynamically created builds and leftover pods) and prepare for a fresh install by running the automated cleanup script:
 
 ```bash
 ./reset.sh
