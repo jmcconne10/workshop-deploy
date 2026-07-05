@@ -71,6 +71,14 @@ starterApp:
         cpu: 200m
         memory: 256Mi
 
+# Team Configuration
+# Number of developers on the team. When >= 2, the setup Job pre-creates branches
+# member1..memberN off `dev`, one per developer, so each works on their own branch
+# and merges into `dev` to update the shared Dev site. Default 1 (solo) creates no
+# member branches — the single developer just uses `dev` directly. The batch
+# orchestrator sets this per team from the roster's `members` field.
+memberCount: 1
+
 # Build and S2I Configuration
 build:
   # The Python builder image used by OpenShift S2I build.

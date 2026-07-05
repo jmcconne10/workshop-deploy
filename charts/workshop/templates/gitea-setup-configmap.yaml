@@ -70,6 +70,23 @@ data:
       -d "{\"new_branch_name\": \"dev\", \"old_branch_name\": \"${DEFAULT_BRANCH}\"}" \
       "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/branches" || echo "Branch dev might already exist."
 
+    # For teams of 2+, pre-create one branch per developer (member1..memberN) off dev.
+    # Each developer works on their own branch and merges into dev to update the shared
+    # Dev site. These branches don't match the BuildConfig webhook branch_filter, so
+    # pushing to them never triggers a build — only merging into dev does.
+    MEMBER_COUNT={{ .Values.memberCount | default 1 }}
+    if [ "$MEMBER_COUNT" -ge 2 ]; then
+      i=1
+      while [ "$i" -le "$MEMBER_COUNT" ]; do
+        echo "Creating member${i} branch..."
+        curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+          -H "Content-Type: application/json" \
+          -d "{\"new_branch_name\": \"member${i}\", \"old_branch_name\": \"dev\"}" \
+          "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}/branches" || echo "Branch member${i} might already exist."
+        i=$((i+1))
+      done
+    fi
+
     # Webhook URLs pointing to the BuildConfig generic triggers via external API server
     DEV_WEBHOOK_URL="${OC_API_SERVER}/apis/build.openshift.io/v1/namespaces/${NAMESPACE}/buildconfigs/{{ include "workshop.fullname" . }}-dev/webhooks/{{ .Values.build.webhookSecret | default "secretwebhooktoken123" }}/generic"
     PROD_WEBHOOK_URL="${OC_API_SERVER}/apis/build.openshift.io/v1/namespaces/${NAMESPACE}/buildconfigs/{{ include "workshop.fullname" . }}-prod/webhooks/{{ .Values.build.webhookSecret | default "secretwebhooktoken123" }}/generic"

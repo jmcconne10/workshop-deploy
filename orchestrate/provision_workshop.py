@@ -31,11 +31,12 @@ JOB_POLL_INTERVAL_SECONDS = 5
 
 
 class TeamResult:
-    def __init__(self, team_id, display_name, namespace, release):
+    def __init__(self, team_id, display_name, namespace, release, member_count=1):
         self.team_id = team_id
         self.display_name = display_name
         self.namespace = namespace
         self.release = release
+        self.member_count = member_count
         self.succeeded = False
         self.error = None
         self.gitea_url = None
@@ -120,9 +121,10 @@ def provision_team(team, cluster, dry_run):
     display_name = team.get("displayName", f"Team {team_id}")
     namespace = f"{cluster['namespacePrefix']}-team-{team_id}"
     release = f"team-{team_id}"
+    member_count = max(1, int(team.get("members", 1)))
 
     print(f"\n=== {display_name} ({namespace}) ===")
-    outcome = TeamResult(team_id, display_name, namespace, release)
+    outcome = TeamResult(team_id, display_name, namespace, release, member_count)
 
     try:
         if namespace_exists(namespace):
@@ -144,6 +146,7 @@ def provision_team(team, cluster, dry_run):
             "--set", f"openshift.token={oc_token}",
             "--set", f"gitea.admin.password={admin_password}",
             "--set", f"build.webhookSecret={webhook_secret}",
+            "--set", f"memberCount={member_count}",
         ]
         run(helm_cmd, dry_run, mask_values=[oc_token, admin_password, webhook_secret])
 
@@ -174,6 +177,33 @@ def teardown_team(team, cluster, dry_run):
     run(["oc", "delete", "project", namespace], dry_run, check=False)
 
 
+def build_team_workflow(member_count):
+    """Return the per-team member-branch instructions, or "" for a solo team."""
+    if member_count < 2:
+        return ""
+    branch_list = ", ".join(f"`member{i}`" for i in range(1, member_count + 1))
+    return (
+        f"### Working as a Team ({member_count} developers)\n\n"
+        f"Your team has {member_count} developers, and each of you has a pre-made branch "
+        f"to work in: {branch_list}. Pick your number and use that branch instead of "
+        f"editing `dev` directly.\n\n"
+        "```bash\n"
+        "# Switch to YOUR member branch (e.g. member2 if you're developer 2)\n"
+        "git checkout member<your-number>\n\n"
+        "# ...edit app.py and commit as often as you like —\n"
+        "# pushing your member branch does NOT change any website...\n"
+        "git push origin member<your-number>\n\n"
+        "# When you want your work on the shared TEAM Dev Web Site, merge into dev:\n"
+        "git checkout dev\n"
+        "git pull origin dev             # pick up teammates' latest first\n"
+        "git merge member<your-number>   # resolve conflicts if teammates touched the same code\n"
+        "git push origin dev             # updates the shared Dev Web Site in ~1-2 minutes\n"
+        "```\n\n"
+        "Pull `dev` before merging so the site reflects everyone's work. Only one person "
+        "promotes the team's work to Prod (the `main` merge in Step 3).\n"
+    )
+
+
 def render_handout(outcome, clone_url):
     template = string.Template(HANDOUT_TEMPLATE_PATH.read_text())
     return template.substitute(
@@ -184,6 +214,7 @@ def render_handout(outcome, clone_url):
         clone_url=clone_url,
         admin_user=GITEA_ADMIN_USER,
         admin_password=outcome.admin_password,
+        team_workflow=build_team_workflow(outcome.member_count),
     )
 
 
