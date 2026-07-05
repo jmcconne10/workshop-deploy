@@ -107,7 +107,10 @@ stacks. See [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md) for cluster prerequisit
    cp orchestrate/teams.example.yaml orchestrate/teams.local.yaml
    ```
    Edit `cluster.apiServer`, `cluster.valuesFile`, `cluster.namespacePrefix`, and the
-   `teams` list (one `id` + `displayName` per team).
+   `teams` list (one `id` + `displayName` per team). Optionally set `members: <N>` per
+   team (default 1): for a team of 2+, the deploy pre-creates branches `member1`..`memberN`
+   off `dev`, one per developer, and each team's handout is tailored with the matching
+   member-branch workflow (see Part 2).
 3. **Log in to the target cluster and set the webhook auth token** (same token model
    as the single-deployment flow — see Prerequisites above):
    ```bash
@@ -156,6 +159,15 @@ In short, a participant:
    deploys the update to their **Dev Web Site**.
 3. **Merges `dev` into `main` and pushes** → OpenShift automatically builds and
    deploys the update to their **Prod Web Site**.
+
+**Teams with multiple developers (batch `members: N ≥ 2`):** each team shares one Dev
+site, so developers don't all push `dev` directly. The deploy pre-creates a branch per
+developer — `member1`..`memberN`, off `dev`. Each developer works on their own member
+branch (pushing there triggers no build — it's private scratch space), then merges into
+`dev` and pushes `dev` to update the shared team Dev site. They `git pull origin dev`
+before merging so the site reflects everyone's work, and one person promotes `dev`→`main`
+for Prod. This member-branch section is injected into each team's handout automatically
+based on its `members` count; solo teams (`members: 1`) just use `dev` directly as above.
 
 They never touch OpenShift directly. The exact commands and wording sent to
 participants live in the handout templates, not here — edit those if you want to

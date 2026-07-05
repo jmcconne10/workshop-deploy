@@ -17,10 +17,18 @@ cluster:
 
 # One entry per team/participant. `id` should be short and filesystem/DNS-safe
 # (lowercase letters, digits, hyphens) since it's used in namespace and release names.
+#
+# `members` (optional, default 1) is how many developers are on the team. For a team
+# of 2+, the deploy pre-creates branches member1..memberN off `dev`, one per developer,
+# so each works on their own branch and merges into `dev` to update the shared Dev site.
+# Omit it (or set 1) for a solo team — no member branches are created and the single
+# developer just uses `dev` directly.
 teams:
   - id: "01"
     displayName: "Team Rocket"
+    members: 5
   - id: "02"
     displayName: "Team Falcon"
+    members: 3
   - id: "03"
     displayName: "Team Phoenix"
