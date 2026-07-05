@@ -83,6 +83,18 @@ git merge dev
 git push origin main
 \`\`\`
 *This will trigger a production build and update your **Prod Web Site** automatically.*
+
+---
+
+## More Than One Developer?
+
+This single deployment is set up for one person by default. If several people will share
+it, reinstall with \`--set memberCount=N\` (e.g. \`helm install workshop-poc charts/workshop
+--set openshift.apiServer=\$(oc whoami --show-server) --set openshift.token=\$(oc whoami -t)
+--set memberCount=3\`). That pre-creates branches \`member1\`..\`memberN\` off \`dev\`; each
+developer works on their own member branch and merges into \`dev\` (\`git checkout dev &&
+git pull origin dev && git merge member<your-number> && git push origin dev\`) to update
+the shared Dev Web Site. The batch/multi-team flow (Part 1B) does this per team automatically.
 EOF
 
 echo "SUCCESS: HANDOUT.md generated in the root directory!"
