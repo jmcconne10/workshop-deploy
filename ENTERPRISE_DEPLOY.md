@@ -101,3 +101,5 @@ helm install workshop-poc charts/workshop -f values-enterprise.yaml \
     *   *Fix:* Your cluster may not support the default storage class or the storage class specified in `values-enterprise.yaml` is invalid. Check available storage classes with `oc get sc` and update `gitea.persistence.storageClass` accordingly.
 *   **Issue: Webhook triggers failing (`401 Unauthorized` or `502 Bad Gateway`)**
     *   *Fix:* Verify that Gitea's internal webhook points to `https://kubernetes.default.svc`. Check Gitea logs for connection timeouts or SSL verification issues. (SSL verification is bypassed in the hook script by setting `skip_verify: "1"`).
+*   **Issue: `ImagePullBackOff` on the dev/prod app pod right after install**
+    *   *Fix:* This is expected for the first ~1-2 minutes — the chart triggers an initial build automatically, and the pod can't pull an image until it finishes. Check `oc get builds` and `oc logs job/<release>-gitea-setup`; if the setup job's log shows it couldn't trigger the build (e.g. bad `openshift.token`/`openshift.apiServer`), fall back to `oc start-build <release>-dev` / `oc start-build <release>-prod` manually.

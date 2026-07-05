@@ -25,4 +25,6 @@ oc get pods,svc,route,deployment,bc,builds,job,pvc,secret -l app.kubernetes.io/n
 
 echo "=== Cleanup Complete ==="
 echo "To stand the environment back up, run:"
-echo "  helm install workshop-poc charts/workshop"
+echo "  helm install workshop-poc charts/workshop \\"
+echo "    --set openshift.apiServer=\$(oc whoami --show-server) \\"
+echo "    --set openshift.token=\$(oc whoami -t)"

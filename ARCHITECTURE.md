@@ -100,6 +100,11 @@ hookless resources first, then runs post-install hooks in weight order.
    endpoint (`.../buildconfigs/<fullname>-dev/webhooks/<webhookSecret>/generic`),
    authenticated with `Authorization: Bearer <oc token>` since the sandbox's RBAC
    rejects the unauthenticated in-cluster path Gitea would normally use.
+7. Fires each of those same generic webhook URLs directly (up to 3 retries), the way
+   Gitea itself would on a push. This step exists because steps 4-5 seed the repo via
+   Gitea's Contents API, not a real `git push` — so the webhooks registered in step 6
+   have nothing to retroactively fire on, and without this the `dev`/`prod` BuildConfigs
+   would never get a first build.
 
 Because every step is idempotent-ish (`|| echo "... might already exist"`), rerunning
 `helm upgrade` or reinstalling is safe — failures to re-create existing objects don't
@@ -115,8 +120,9 @@ fail the Job.
   (`image-registry.openshift-image-registry.svc:5000/<namespace>/<fullname>-<env>:latest`)
   rather than a public registry, so no pull secret is required for the app images.
 - `BuildConfig` triggers are `type: Generic` (webhook-driven only) — there's no
-  `ImageChange` or `ConfigChange` trigger, so builds only happen in response to the
-  Gitea webhook hitting the generic endpoint.
+  `ImageChange` or `ConfigChange` trigger. Builds happen either from a real subsequent
+  Gitea-triggered push, or from the setup Job's one-time direct call (step 7 above)
+  that covers the very first build.
 
 ## Configuration surface (`values.yaml`)
 
