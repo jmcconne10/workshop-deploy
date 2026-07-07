@@ -28,7 +28,10 @@ gitea:
     repository: nexus.company.com/repository/docker-hub/gitea/gitea
     tag: 1.22.0-rootless
     pullPolicy: IfNotPresent
-    # Define image pull secret if Nexus requires authentication
+    # Image pull secret(s) for pulling the Gitea image from a private Nexus. Rendered
+    # into the Gitea Deployment's pod `imagePullSecrets`. The named secret must already
+    # exist in the namespace (see ENTERPRISE_DEPLOY.md Step 1). Leave empty/unset if the
+    # registry needs no auth or you link the secret to the `default` service account instead.
     pullSecrets:
       - name: nexus-registry-credentials
 
@@ -92,7 +95,11 @@ build:
   # Point to the S2I python image hosted in the internal Nexus registry
   builderImage: nexus.company.com/repository/container-images/ubi8/python-39:latest
   
-  # Image Pull Secrets for pulling builder images from private Nexus
+  # Image pull secret for pulling the S2I builder image from a private Nexus. The first
+  # entry is rendered into each BuildConfig's `strategy.sourceStrategy.pullSecret`. The
+  # named secret must already exist in the namespace (see ENTERPRISE_DEPLOY.md Step 1).
+  # Leave empty/unset if the registry needs no auth or you link the secret to the
+  # `builder` service account instead.
   pullSecrets:
     - name: nexus-registry-credentials
     

@@ -30,6 +30,10 @@ spec:
       from:
         kind: DockerImage
         name: {{ .Values.build.builderImage }}
+      {{- with (first (.Values.build.pullSecrets | default list)) }}
+      pullSecret:
+        name: {{ .name }}
+      {{- end }}
   triggers:
     - type: Generic
       generic:
@@ -60,6 +64,10 @@ spec:
       from:
         kind: DockerImage
         name: {{ .Values.build.builderImage }}
+      {{- with (first (.Values.build.pullSecrets | default list)) }}
+      pullSecret:
+        name: {{ .name }}
+      {{- end }}
   triggers:
     - type: Generic
       generic:

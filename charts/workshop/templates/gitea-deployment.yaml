@@ -16,6 +16,10 @@ spec:
       labels:
         app: {{ include "workshop.name" . }}-gitea
     spec:
+      {{- with .Values.gitea.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: gitea
           image: "{{ .Values.gitea.image.repository }}:{{ .Values.gitea.image.tag }}"
