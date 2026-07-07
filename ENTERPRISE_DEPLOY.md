@@ -22,9 +22,23 @@ This guide outlines the steps required to deploy the workshop environment onto y
 Before installing the Helm chart, configure your namespace with the necessary registry secrets.
 
 1. **Create or Switch to the Target Project:**
+
+   If you have permission to create your own projects, create one:
    ```bash
    oc new-project hackathon-workshop
    ```
+
+   **If the project was pre-created for you** (common on locked-down enterprise
+   clusters where you don't have the `self-provisioner` role to run `oc new-project`),
+   skip the create step and just switch into the existing project instead:
+   ```bash
+   oc project <your-existing-project-name>
+   ```
+   Everything below — the pull secret, the service-account links, and the `helm install`
+   in Step 3 — targets whichever project you're currently in, so no other changes are
+   needed. The chart is namespace-relative and never hard-codes a project name; it deploys
+   into the project you select here. (Do **not** pass `--create-namespace` to Helm — the
+   project already exists.)
 2. **Create the Private Registry Image Pull Secret:**
    This secret allows the cluster to pull the rootless Gitea and builder images from Nexus. Replace credentials below:
    ```bash
@@ -45,7 +59,7 @@ Before installing the Helm chart, configure your namespace with the necessary re
 
 ## Step 2: Configure Enterprise Override Values
 
-Edit the template [values-enterprise.yaml](file:///Users/joemcconnell/Documents/Code/workshop-deploy/values-enterprise.yaml) in the root of the project to match your infrastructure requirements:
+Edit the template [values-enterprise.yaml](values-enterprise.yaml) in the root of the project to match your infrastructure requirements:
 
 1. **API Server (required):** Set `openshift.apiServer` to your enterprise cluster's API server URL. This ships blank in `values-enterprise.yaml` on purpose — if left unset, the Gitea webhook has no valid target and build triggers will fail. Pass it explicitly, e.g. `--set openshift.apiServer=https://api.openshift.company.com:6443`.
 2. **Registry Domains:** Update the repository URLs to point to your Nexus domain (e.g. `nexus.company.com`).
@@ -103,6 +117,8 @@ helm install workshop-poc charts/workshop -f values-enterprise.yaml \
 *   **Issue: Pod stuck in `Pending` state with `VolumeNotBound`**
     *   *Fix:* Your cluster may not support the default storage class or the storage class specified in `values-enterprise.yaml` is invalid. Check available storage classes with `oc get sc` and update `gitea.persistence.storageClass` accordingly.
 *   **Issue: Webhook triggers failing (`401 Unauthorized` or `502 Bad Gateway`)**
-    *   *Fix:* Verify that Gitea's internal webhook points to `https://kubernetes.default.svc`. Check Gitea logs for connection timeouts or SSL verification issues. (SSL verification is bypassed in the hook script by setting `skip_verify: "1"`).
+    *   *Fix:* The setup Job registers Gitea's webhooks against your **external** cluster API server (`openshift.apiServer`), not the in-cluster `kubernetes.default.svc` address, and authenticates with `openshift.token`. A **401** almost always means the token is missing, wrong, or expired — re-install passing a valid `--set openshift.token=...` (or a longer-lived service-account token). A **502/connection error** usually means `openshift.apiServer` is wrong or unreachable from inside the cluster — confirm the URL matches `oc whoami --show-server`. Check the webhook delivery details in the Gitea repo UI (Settings → Webhooks) and the setup Job log (`oc logs job/<release>-gitea-setup`). SSL verification on the outbound call is intentionally bypassed in the hook script via `skip_verify: "1"`.
 *   **Issue: `ImagePullBackOff` on the dev/prod app pod right after install**
     *   *Fix:* This is expected for the first ~1-2 minutes — the chart triggers an initial build automatically, and the pod can't pull an image until it finishes. Check `oc get builds` and `oc logs job/<release>-gitea-setup`; if the setup job's log shows it couldn't trigger the build (e.g. bad `openshift.token`/`openshift.apiServer`), fall back to `oc start-build <release>-dev` / `oc start-build <release>-prod` manually.
+*   **Issue: Starter site renders in a plain/fallback font on an air-gapped network**
+    *   *Fix:* Cosmetic only. The starter `app.py` links a web font from `fonts.googleapis.com`; with no outbound internet the browser silently falls back to a system font (Arial). The app is otherwise fully functional. To make it self-contained, remove or self-host the `<link href="https://fonts.googleapis.com/...">` tag in `charts/workshop/files/starter-app/app.py`.

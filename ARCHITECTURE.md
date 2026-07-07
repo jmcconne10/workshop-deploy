@@ -94,7 +94,12 @@ hookless resources first, then runs post-install hooks in weight order.
    Contents API, which expects file content as base64 — the ConfigMap carries the
    pre-encoded payload (built from `files/starter-app/` at `helm template`/`install`
    time) so the Job itself never needs a base64 decode/encode step, only `curl`.
-5. Creates a `dev` branch from the default branch.
+5. Creates a `dev` branch from the default branch. If `.Values.memberCount` is `>= 2`,
+   also creates one branch per developer (`member1`..`memberN`) off `dev`, so each
+   member of a multi-developer team has their own branch to work in and merge back into
+   `dev`. These branches don't match the BuildConfig webhook `branch_filter`, so pushing
+   to them triggers no build — only merging into `dev` does. Default `memberCount: 1`
+   (solo) creates no member branches.
 6. Registers two Gitea webhooks against the **external OpenShift API server**
    (`.Values.openshift.apiServer`), pointed at each BuildConfig's generic webhook
    endpoint (`.../buildconfigs/<fullname>-dev/webhooks/<webhookSecret>/generic`),
@@ -133,6 +138,7 @@ fail the Job.
 | `gitea.image.*`, `gitea.resources`, `gitea.persistence.*` | Gitea container/image/storage sizing |
 | `gitea.admin.*` | Gitea admin username/password/email (also used as the repo owner) |
 | `starterApp.dev` / `starterApp.prod` | Replica count + resource requests/limits per environment |
+| `memberCount` | Team size; if `>= 2`, the setup Job pre-creates `member1`..`memberN` branches off `dev` (default `1` = solo, none created) |
 | `build.builderImage` | S2I builder image (UBI8 Python 3.9 by default) |
 | `build.successfulBuildsHistoryLimit` / `failedBuildsHistoryLimit` | Build pruning, kept low for sandbox quota |
 | `build.repoName` | Gitea repo name created by the setup Job |
