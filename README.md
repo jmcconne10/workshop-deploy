@@ -65,58 +65,43 @@ oc get route workshop-poc-prod -o jsonpath='https://{.spec.host}{"\n"}'
 
 ### 2. Simulate Hackathon Team Development
 
-To verify the automated build and deployment flow, simulate pushing code to Gitea:
+The repository is **already seeded** by the post-install Job — it contains `app.py`
+(a small Flask site) and `requirements.txt`, and already has a `dev` branch. You don't
+create these files; you edit what's there and push. To verify the automated
+build-and-deploy flow:
 
-1. **Clone the Gitea Repo locally:**
+1. **Clone the seeded repo locally:**
    ```bash
    git clone <GITEA_CONSOLE_URL>/workshop-admin/starter-flask-app.git
    cd starter-flask-app
    ```
    *(Enter Gitea credentials when prompted)*
 
-2. **Add a Starter Flask App:**
-   Create `app.py`:
-   ```python
-   from flask import Flask
-   app = Flask(__name__)
-
-   @app.route('/')
-   def hello():
-       return "Hello from OpenShift Hackathon Dev Branch!"
-
-   if __name__ == '__main__':
-       app.run(host='0.0.0.0', port=8080)
-   ```
-
-   Create `requirements.txt`:
-   ```text
-   Flask==3.0.3
-   ```
-
-3. **Verify Dev Deploy:**
-   Check out to `dev` branch and push:
+2. **Verify Dev Deploy:** switch to the existing `dev` branch, make a visible edit, and push:
    ```bash
-   git checkout -b dev
-   git add app.py requirements.txt
-   git commit -m "feat: initial dev flask app"
+   git checkout dev
+   # edit app.py — e.g. change the hero heading text so the change is easy to spot
+   git add app.py
+   git commit -m "feat: customize the dev site"
    git push origin dev
    ```
-
-   This push automatically triggers the Dev build. You can track the build progress:
+   This push automatically triggers the Dev build. Track it, then refresh the **Dev App URL**:
    ```bash
    oc get builds
    oc logs -f bc/workshop-poc-dev
    ```
-   Once the build succeeds, the dev container rolls out. Refresh the **Dev App URL** to verify the hello message.
 
-4. **Verify Prod Deploy:**
-   Merge your changes to `main` (or the default branch `master`) and push:
+3. **Verify Prod Deploy:** merge `dev` into the default branch (`main`) and push:
    ```bash
    git checkout main
    git merge dev
    git push origin main
    ```
-   This push triggers the Prod build. Track progress with `oc logs -f bc/workshop-poc-prod`. Once finished, verify the hello message on the **Prod App URL**.
+   This triggers the Prod build (`oc logs -f bc/workshop-poc-prod`); once it finishes,
+   verify the change on the **Prod App URL**.
+
+> Teams with more than one developer should use the per-member-branch workflow instead
+> of pushing `dev` directly — see [WORKSHOP_GUIDE.md](WORKSHOP_GUIDE.md) Part 2.
 
 ---
 
