@@ -57,12 +57,15 @@ Edit the template [values-enterprise.yaml](file:///Users/joemcconnell/Documents/
 
 ## Step 3: Install the Helm Chart
 
-Run the Helm installation command from the repository root, passing the enterprise values file and your API server:
+Run the Helm installation command from the repository root, passing the enterprise values file, your API server, and an OpenShift token. **The token is required** — Gitea's webhook and the chart's automatic initial-build trigger authenticate to the cluster with it, and without it both get an HTTP 403 (an empty token is treated as anonymous), so the dev/prod sites never get a build:
 
 ```bash
 helm install workshop-poc charts/workshop -f values-enterprise.yaml \
-  --set openshift.apiServer=https://api.openshift.company.com:6443
+  --set openshift.apiServer=https://api.openshift.company.com:6443 \
+  --set openshift.token=$(oc whoami -t)
 ```
+
+> `oc whoami -t` uses your current login token, which expires (often within hours on enterprise clusters). For a long-running or shared environment, create a dedicated **service-account token** with rights to trigger the BuildConfig webhooks and pass that instead, so builds keep working after your personal session expires.
 
 ---
 
