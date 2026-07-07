@@ -4,7 +4,7 @@ This document tracks the iterative tasks remaining to finalize and validate the 
 
 ## Phase 1: Starter App Code Injection ✅ COMPLETE
 - [x] **Inject Starter Files via Gitea API:**
-  - Updated the Gitea post-install setup script ([gitea-setup-configmap.yaml](file:///Users/joemcconnell/Documents/Code/workshop-deploy/charts/workshop/templates/gitea-setup-configmap.yaml)) to call Gitea's Content API to write the initial files using pre-encoded base64 (to avoid shell indentation issues):
+  - Updated the Gitea post-install setup script ([gitea-setup-configmap.yaml](charts/workshop/templates/gitea-setup-configmap.yaml)) to call Gitea's Content API to write the initial files using pre-encoded base64 (to avoid shell indentation issues):
     - [x] `app.py` (Simple Flask application listening on port `8080`)
     - [x] `requirements.txt` (Flask dependency)
   - Both branches (`main` and `dev`) are pre-populated on install.

@@ -2,7 +2,10 @@
 
 This repository contains the Helm chart and configurations for deploying a self-contained, automated workshop environment on the **Red Hat Developer Sandbox**.
 
-For a technical breakdown of the chart's resources and the install/build/deploy flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
+This README covers a single sandbox deployment. For other scenarios, see:
+* [WORKSHOP_GUIDE.md](WORKSHOP_GUIDE.md) — organizer setup, the participant development flow, batch/multi-team provisioning, and teardown.
+* [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md) — deploying to an internal/enterprise cluster with a private Nexus registry.
+* [ARCHITECTURE.md](ARCHITECTURE.md) — a technical breakdown of the chart's resources and the install/build/deploy flow.
 
 ## Prerequisites
 
@@ -107,7 +110,15 @@ build-and-deploy flow:
 
 ## Teardown
 
-To cleanly remove all resources from the sandbox:
+The most thorough cleanup is the `reset.sh` script — it runs `helm uninstall` **and**
+removes the dynamically created build artifacts (Builds, build pods, and the setup Job)
+that a bare uninstall leaves behind:
+
+```bash
+./reset.sh
+```
+
+Or, to only remove the Helm-managed resources (leaving any leftover build artifacts):
 
 ```bash
 helm uninstall workshop-poc
