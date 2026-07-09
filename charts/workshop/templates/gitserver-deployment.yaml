@@ -57,6 +57,8 @@ spec:
               value: {{ .Values.build.repoName | quote }}
             - name: MEMBER_COUNT
               value: {{ .Values.memberCount | default 1 | quote }}
+            - name: GITSERVER_SERVICE
+              value: {{ include "workshop.fullname" . }}-gitserver
           resources:
             {{- toYaml .Values.gitServer.resources | nindent 12 }}
           volumeMounts:
@@ -70,8 +72,8 @@ spec:
             httpGet:
               path: /git/{{ .Values.build.repoName }}.git/info/refs?service=git-upload-pack
               port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 5
+            periodSeconds: 3
           livenessProbe:
             tcpSocket:
               port: http
