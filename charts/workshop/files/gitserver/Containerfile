@@ -1,0 +1,12 @@
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+# git-core provides both git and the git-http-backend CGI; httpd serves it.
+RUN microdnf install -y git-core httpd && microdnf clean all
+
+# Make the runtime dirs writable by an arbitrary (non-root) OpenShift UID via group 0.
+RUN mkdir -p /var/git /run/httpd /var/log/httpd \
+ && chgrp -R 0 /var/git /run/httpd /var/log/httpd /etc/httpd \
+ && chmod -R g=rwX /var/git /run/httpd /var/log/httpd /etc/httpd
+
+EXPOSE 8080
+USER 1001

@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "workshop.fullname" . }}-gitserver
+  labels:
+    {{- include "workshop.labels" . | nindent 4 }}
+  annotations:
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"{{ include "workshop.fullname" . }}-gitserver:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"gitserver\")].image"}]'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "workshop.name" . }}-gitserver
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ include "workshop.name" . }}-gitserver
+    spec:
+      containers:
+        - name: gitserver
+          # Built in-cluster from files/gitserver/Containerfile into the -gitserver
+          # ImageStream; the trigger annotation above rolls this once the build lands.
+          image: image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}/{{ include "workshop.fullname" . }}-gitserver:latest
+          imagePullPolicy: Always
+          command: ["/bin/bash", "/scripts/start.sh"]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: OC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "workshop.fullname" . }}-oc-token
+                  key: token
+            - name: OC_API_SERVER
+              value: {{ .Values.openshift.apiServer | quote }}
+            - name: BUILD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: DEV_BC
+              value: {{ include "workshop.fullname" . }}-dev
+            - name: PROD_BC
+              value: {{ include "workshop.fullname" . }}-prod
+            - name: WEBHOOK_SECRET
+              value: {{ .Values.build.webhookSecret | default "secretwebhooktoken123" | quote }}
+            - name: REPO_NAME
+              value: {{ .Values.build.repoName | quote }}
+            - name: MEMBER_COUNT
+              value: {{ .Values.memberCount | default 1 | quote }}
+          resources:
+            {{- toYaml .Values.gitServer.resources | nindent 12 }}
+          volumeMounts:
+            - name: repo-data
+              mountPath: /var/git
+            - name: scripts
+              mountPath: /scripts
+            - name: starter
+              mountPath: /starter
+          readinessProbe:
+            httpGet:
+              path: /git/{{ .Values.build.repoName }}.git/info/refs?service=git-upload-pack
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+      volumes:
+        - name: repo-data
+          persistentVolumeClaim:
+            claimName: {{ include "workshop.fullname" . }}-gitserver
+        - name: scripts
+          configMap:
+            name: {{ include "workshop.fullname" . }}-gitserver-start
+            defaultMode: 0755
+        - name: starter
+          configMap:
+            name: {{ include "workshop.fullname" . }}-gitserver-starter

@@ -6,47 +6,46 @@ global:
 # OpenShift Cluster Configuration
 openshift:
   # REQUIRED: your cluster's external API server (e.g. https://api.rm3.7wse.p1.openshiftapps.com:6443).
-  # Used by the Gitea webhook and the chart's initial-build trigger to call the
-  # BuildConfig trigger endpoint. Left blank by default (rather than a real-looking
+  # Used by the git server's post-receive hook to call the BuildConfig trigger
+  # endpoint. Left blank by default (rather than a real-looking
   # example) because every Developer Sandbox/cluster has a unique URL — leaving this
   # unset here and pointing at someone else's cluster by accident is worse than a
   # loud, obvious failure. Always pass explicitly, e.g.
   #   --set openshift.apiServer=$(oc whoami --show-server)
   apiServer: ""
   # OC login token — loaded from the Secret 'workshop-poc-oc-token'.
-  # REQUIRED for the Gitea webhook and initial-build trigger to authenticate; without
-  # it both get HTTP 403 from the API server (an empty Bearer token is anonymous).
+  # REQUIRED for the git server's post-receive hook to authenticate to the build
+  # trigger; without it the hook gets HTTP 403 (an empty Bearer token is anonymous).
   # Do NOT set this here; set it via: --set openshift.token=$(oc whoami -t)
   token: ""
 
-# Gitea configuration
-gitea:
+# Git server configuration
+# A bare git server on Red Hat UBI (git + httpd serving smart HTTP via
+# git-http-backend). The image is built in-cluster from
+# charts/workshop/files/gitserver/Containerfile. Pushes fire a git post-receive
+# hook that triggers the dev/prod BuildConfig webhooks (replaces Gitea's webhook).
+gitServer:
   enabled: true
-  image:
-    repository: gitea/gitea
-    tag: 1.22.0-rootless
-    pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 3000
-    sshPort: 2222
+    port: 8080
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 128Mi
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 256Mi
   persistence:
     enabled: true
     size: 1Gi
     storageClass: ""
     keepOnUninstall: false
+  # Shared credential participants use to push. Phase 1 allows anonymous push;
+  # basic-auth enforcement (htpasswd) lands in Phase 2.
   admin:
     username: workshop-admin
-    # Sane default password for the admin account
     password: "WorkshopAdminPassword123!"
-    email: admin@example.com
 
 # Starter Flask Application Configuration
 starterApp:
@@ -87,7 +86,7 @@ build:
   # History limits for S2I builds to conserve space/quota.
   successfulBuildsHistoryLimit: 2
   failedBuildsHistoryLimit: 2
-  # Repo name inside Gitea
+  # Repo name served by the git server
   repoName: starter-flask-app
   # Webhook secret used in the BuildConfig generic webhook URL path
   webhookSecret: "secretwebhooktoken123"

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "workshop.fullname" . }}-gitserver
+  labels:
+    {{- include "workshop.labels" . | nindent 4 }}
+  {{- if .Values.gitServer.persistence.keepOnUninstall }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.gitServer.persistence.size | default "1Gi" | quote }}
+  {{- if .Values.gitServer.persistence.storageClass }}
+  storageClassName: {{ .Values.gitServer.persistence.storageClass | quote }}
+  {{- end }}
