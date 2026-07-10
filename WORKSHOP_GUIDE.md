@@ -6,7 +6,7 @@ This guide is split into instructions for the **Workshop Organizer** (infrastruc
 
 There are two ways to stand this up, depending on what you're running:
 
-* **A single deployment** — one Gitea + dev + prod stack, e.g. for testing the chart
+* **A single deployment** — one git server + dev + prod stack, e.g. for testing the chart
   or a one-person session. Follow **Part 1: Organizer Setup Guide (Single Deployment)**
   below.
 * **A real multi-team workshop** (up to ~20 teams) — one fully isolated stack per
@@ -34,9 +34,9 @@ oc login --token=<YOUR_TOKEN> --server=<YOUR_SERVER_URL>
 ```
 
 ### 3. Deploy the Environment
-Deploy the Gitea server, starter repository, BuildConfigs, and routing templates using Helm.
-`openshift.apiServer`/`openshift.token` are required — without them, Gitea's webhook and
-the chart's automatic initial-build trigger both get an HTTP 403 from the API server
+Deploy the git server, starter repository, BuildConfigs, and routing templates using Helm.
+`openshift.apiServer`/`openshift.token` are required — without them, the git server's
+`post-receive` hook (and the initial-build trigger) get an HTTP 403 from the API server
 (an empty token is treated as anonymous) and the dev/prod sites never get a build:
 ```bash
 helm install workshop-poc charts/workshop \
@@ -45,27 +45,28 @@ helm install workshop-poc charts/workshop \
 ```
 
 ### 4. Retrieve URLs & Generate the Attendee Handout
-Wait about 1–2 minutes for the setup job to run, then run the handout generator —
-it queries the three routes for you and writes a ready-to-share `HANDOUT.md`:
+Wait about 1–2 minutes for the git server image to build and the repo to seed, then run
+the handout generator — it queries the routes for you and writes a ready-to-share
+`HANDOUT.md` (git clone URL + Dev/Prod site URLs):
 ```bash
 ./generate-handout.sh
 ```
-* **Gitea Admin Username:** `workshop-admin`
-* **Gitea Admin Password:** `WorkshopAdminPassword123!`
+The git server is a plain repository (no web UI, no login) — participants clone and push
+over the git clone URL in the handout.
 
 Share the generated `HANDOUT.md` with the participant.
 
-The Dev/Prod routes above will be reachable as soon as the setup job finishes, but the
-starter app itself won't render for another ~1-2 minutes while the chart's automatic
-initial build finishes — if you check immediately and see an error page, that's
-expected; run `oc get builds` to confirm one is in progress.
+The Dev/Prod routes will be reachable as soon as the git server is up, but the starter
+app itself won't render for another ~1-2 minutes while the initial build finishes — if
+you check immediately and see an error page, that's expected; run `oc get builds` to
+confirm one is in progress.
 
 <details>
 <summary>Just need the URLs yourself, without generating a handout?</summary>
 
 ```bash
-# Retrieve Gitea UI URL
-echo "Gitea URL: $(oc get route workshop-poc-gitea -o jsonpath='https://{.spec.host}')"
+# Retrieve Git clone URL
+echo "Git clone URL: $(oc get route workshop-poc-gitserver -o jsonpath='https://{.spec.host}')/git/starter-flask-app.git"
 
 # Retrieve Dev Environment App URL
 echo "Dev Web Site URL: $(oc get route workshop-poc-dev -o jsonpath='https://{.spec.host}')"
@@ -153,8 +154,8 @@ participants are being told without having to go dig it out of a template file.
 
 In short, a participant:
 
-1. **Clones their starter repo** from Gitea using the URL and credentials in their
-   handout — pre-populated with `app.py` (a simple Flask app) and `requirements.txt`.
+1. **Clones their starter repo** from the git server using the clone URL in their
+   handout (no login required) — pre-populated with `app.py` (a simple Flask app) and `requirements.txt`.
 2. **Pushes changes to the `dev` branch** → OpenShift automatically builds and
    deploys the update to their **Dev Web Site**.
 3. **Merges `dev` into `main` and pushes** → OpenShift automatically builds and
