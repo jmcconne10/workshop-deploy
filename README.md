@@ -24,10 +24,10 @@ This README covers a single sandbox deployment. For other scenarios, see:
 
 ## Deployment
 
-Deploy the entire environment (Gitea, starter repo, BuildConfigs, and Flask app routes) with a single command.
-`openshift.apiServer`/`openshift.token` are required — without them, Gitea's webhook and
-the chart's automatic initial-build trigger both get an HTTP 403 from the API server
-(an empty token is treated as anonymous), so the dev/prod sites never get a build:
+Deploy the entire environment (a UBI-based git server, starter repo, BuildConfigs, and Flask app routes) with a single command.
+`openshift.apiServer`/`openshift.token` are required — without them, the git server's
+`post-receive` hook (and the one-time initial-build trigger) get an HTTP 403 from the
+API server (an empty token is treated as anonymous), so the dev/prod sites never get a build:
 
 ```bash
 helm install workshop-poc charts/workshop \
@@ -35,23 +35,24 @@ helm install workshop-poc charts/workshop \
   --set openshift.token=$(oc whoami -t)
 ```
 
-### Post-Install Automation
-The Helm chart includes a post-install hook Job that:
-1. Waits for Gitea to start.
-2. Creates a public repository named `starter-flask-app` under the `workshop-admin` account.
-3. Automatically sets up the `dev` branch.
-4. Configures Gitea webhooks to trigger the respective OpenShift S2I BuildConfigs for `dev` (pushed to `dev`) and `prod` (pushed to the default branch).
-5. Fires each BuildConfig's webhook trigger once directly, so the initial `dev`/`prod` images build automatically — the app.py/requirements.txt seeded above went in via Gitea's API rather than a real push, so there'd otherwise be no first build for the webhooks to react to.
+### What Happens on Install
+The chart builds a small UBI git-server image in-cluster (`git` + `httpd`), then the git server pod:
+1. Initializes a **bare git repository** named `starter-flask-app` and seeds it with `app.py` + `requirements.txt`.
+2. Creates the `dev` branch (and `member1`..`memberN` if `memberCount >= 2`).
+3. Installs a server-side **`post-receive` hook** that triggers the OpenShift S2I BuildConfigs — push to `dev` builds/deploys **dev**, push to `main` builds/deploys **prod**.
+4. Once it's serving over its Route, triggers the initial dev/prod builds so both sites come up automatically.
+
+There is no web UI and no database — it's a plain git server, and (in this phase) clone/push require no login.
 
 ---
 
 ## Verification & Testing the Flow
 
-### 1. Retrieve Route URLs & Credentials
-Get Gitea and Flask app URLs:
+### 1. Retrieve Route URLs
+Get the git clone URL and the Flask app URLs:
 ```bash
-# Get Gitea Console URL
-oc get route workshop-poc-gitea -o jsonpath='https://{.spec.host}{"\n"}'
+# Git clone URL (no login required)
+oc get route workshop-poc-gitserver -o jsonpath='https://{.spec.host}/git/starter-flask-app.git{"\n"}'
 
 # Get Dev App URL (runs from the dev branch)
 oc get route workshop-poc-dev -o jsonpath='https://{.spec.host}{"\n"}'
@@ -60,25 +61,22 @@ oc get route workshop-poc-dev -o jsonpath='https://{.spec.host}{"\n"}'
 oc get route workshop-poc-prod -o jsonpath='https://{.spec.host}{"\n"}'
 ```
 
-**Gitea Credentials:**
-- **Username:** `workshop-admin`
-- **Password:** `WorkshopAdminPassword123!`
+The git server is a plain repository (no web UI); no credentials are needed to clone or push.
 
 ---
 
 ### 2. Simulate Hackathon Team Development
 
-The repository is **already seeded** by the post-install Job — it contains `app.py`
+The repository is **already seeded** by the git server on startup — it contains `app.py`
 (a small Flask site) and `requirements.txt`, and already has a `dev` branch. You don't
-create these files; you edit what's there and push. To verify the automated
-build-and-deploy flow:
+create these files; you edit what's there and push (no login required). To verify the
+automated build-and-deploy flow:
 
-1. **Clone the seeded repo locally:**
+1. **Clone the seeded repo locally** (use the git clone URL from step 1):
    ```bash
-   git clone <GITEA_CONSOLE_URL>/workshop-admin/starter-flask-app.git
+   git clone <GIT_CLONE_URL>
    cd starter-flask-app
    ```
-   *(Enter Gitea credentials when prompted)*
 
 2. **Verify Dev Deploy:** switch to the existing `dev` branch, make a visible edit, and push:
    ```bash
@@ -111,8 +109,8 @@ build-and-deploy flow:
 ## Teardown
 
 The most thorough cleanup is the `reset.sh` script — it runs `helm uninstall` **and**
-removes the dynamically created build artifacts (Builds, build pods, and the setup Job)
-that a bare uninstall leaves behind:
+removes the dynamically created build artifacts (Builds and build pods) that a bare
+uninstall leaves behind:
 
 ```bash
 ./reset.sh

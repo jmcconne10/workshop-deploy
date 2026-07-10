@@ -1,0 +1,26 @@
+{{- /*
+Builds the UBI-based git server image from files/gitserver/Containerfile.
+Enterprise/air-gap can skip this build and supply a pre-built image via
+gitServer.image.repository (see gitserver-deployment.yaml) — that path is Phase 4.
+*/ -}}
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ include "workshop.fullname" . }}-gitserver
+  labels:
+    {{- include "workshop.labels" . | nindent 4 }}
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ include "workshop.fullname" . }}-gitserver:latest
+  source:
+    type: Dockerfile
+    dockerfile: |-
+{{ .Files.Get "files/gitserver/Containerfile" | indent 6 }}
+  strategy:
+    type: Docker
+  triggers:
+    - type: ConfigChange
+  successfulBuildsHistoryLimit: {{ .Values.build.successfulBuildsHistoryLimit | default 2 }}
+  failedBuildsHistoryLimit: {{ .Values.build.failedBuildsHistoryLimit | default 2 }}

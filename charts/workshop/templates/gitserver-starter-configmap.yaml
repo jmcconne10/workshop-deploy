@@ -1,0 +1,12 @@
+{{- /* Starter app source, seeded into the repo by start.sh (mounted at /starter). */ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "workshop.fullname" . }}-gitserver-starter
+  labels:
+    {{- include "workshop.labels" . | nindent 4 }}
+data:
+  app.py: |
+{{ .Files.Get "files/starter-app/app.py" | indent 4 }}
+  requirements.txt: |
+{{ .Files.Get "files/starter-app/requirements.txt" | indent 4 }}

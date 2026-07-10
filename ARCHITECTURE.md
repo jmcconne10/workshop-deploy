@@ -7,32 +7,34 @@ for the product goals see [hackathon-workshop-poc.md](hackathon-workshop-poc.md)
 ## Topology
 
 Everything lives in a single OpenShift project and is installed by one Helm
-release (`charts/workshop`):
+release (`charts/workshop`). The git backend is a **bare git server on Red Hat UBI**
+(`git` + `httpd` serving smart HTTP via `git-http-backend`) — no web UI and no
+database; the repositories are just files on a PVC:
 
 ```
-                        ┌─────────────────────────────┐
-                        │        Gitea (SQLite)        │
-                        │  Deployment + PVC + Route     │
-                        │  repo: starter-flask-app      │
-                        │  branches: main, dev          │
-                        └───────────┬───────────────────┘
-                    push "dev"      │      push default branch
-                                    │
-                  ┌─────────────────┴─────────────────┐
-                  ▼                                     ▼
-        Gitea webhook (dev)                   Gitea webhook (prod)
-                  │                                     │
-                  ▼                                     ▼
+                     ┌──────────────────────────────────────┐
+                     │   Git server (UBI: git + httpd)       │
+                     │   Deployment + PVC + Route            │
+                     │   bare repo: starter-flask-app        │
+                     │   branches: main, dev (+ member1..N)  │
+                     └──────────────────┬────────────────────┘
+              git push "dev"            │            git push "main"
+                        (server-side post-receive hook)
+                  ┌─────────────────────┴─────────────────┐
+                  ▼                                         ▼
+        generic webhook (dev)                   generic webhook (prod)
+                  │                                         │
+                  ▼                                         ▼
    BuildConfig <fullname>-dev              BuildConfig <fullname>-prod
    (S2I, ubi8/python-39, git ref dev)      (S2I, ubi8/python-39, git ref main)
-                  │                                     │
-                  ▼                                     ▼
+                  │                                         │
+                  ▼                                         ▼
    ImageStream <fullname>-dev:latest       ImageStream <fullname>-prod:latest
-                  │                                     │
-                  ▼ (image.openshift.io/triggers)        ▼
+                  │                                         │
+                  ▼ (image.openshift.io/triggers)          ▼
    Deployment <fullname>-dev                Deployment <fullname>-prod
-                  │                                     │
-                  ▼                                     ▼
+                  │                                         │
+                  ▼                                         ▼
    Service + Route <fullname>-dev          Service + Route <fullname>-prod
 ```
 
@@ -44,76 +46,78 @@ release (`charts/workshop`):
 ```
 charts/workshop/
   Chart.yaml
-  values.yaml                    # sandbox-sized defaults
+  values.yaml                        # sandbox-sized defaults
   files/
     starter-app/
-      app.py                      # starter Flask website source (edit this directly)
+      app.py                          # starter Flask website source (edit this directly)
       requirements.txt
+    gitserver/
+      Containerfile                   # UBI9 + git-core + httpd image build recipe
+      start.sh                        # git server entrypoint (init/seed/hook/httpd)
   templates/
-    _helpers.tpl                 # name/label helpers
-    NOTES.txt                    # post-install output (route names, admin creds)
-    oc-token-secret.yaml         # Secret holding openshift.token (post-install hook)
-    gitea-deployment.yaml        # Gitea container, admin user bootstrap in postStart
-    gitea-service.yaml
-    gitea-route.yaml
-    gitea-pvc.yaml
-    gitea-setup-configmap.yaml   # setup.sh script; embeds files/starter-app/* as base64
-    gitea-setup-job.yaml         # runs setup.sh (post-install hook)
-    imagestreams.yaml            # dev + prod ImageStreams
-    buildconfigs.yaml            # dev + prod S2I BuildConfigs + webhook secret
+    _helpers.tpl                     # name/label helpers
+    NOTES.txt                        # post-install output (git clone URL, app routes)
+    oc-token-secret.yaml             # Secret holding openshift.token (normal resource)
+    gitserver-buildconfig.yaml       # Docker build of the UBI git image from Containerfile
+    gitserver-imagestream.yaml       # holds the built git-server image
+    gitserver-deployment.yaml        # runs start.sh; mounts repo PVC + token + starter files
+    gitserver-service.yaml           # :8080
+    gitserver-route.yaml             # edge-TLS external clone/push
+    gitserver-pvc.yaml               # bare repo storage
+    gitserver-startup-configmap.yaml # carries start.sh
+    gitserver-starter-configmap.yaml # carries the starter app.py/requirements.txt
+    imagestreams.yaml                # dev + prod app ImageStreams
+    buildconfigs.yaml                # dev + prod S2I BuildConfigs + webhook secret
     app-dev-deployment.yaml / app-prod-deployment.yaml
     app-dev-service.yaml / app-prod-service.yaml
     app-dev-route.yaml / app-prod-route.yaml
 ```
 
-## Install-time sequence (Helm hooks)
+## Install-time sequence
 
-Three resources are annotated as `helm.sh/hook: post-install`, ordered by
-`helm.sh/hook-weight`:
+Unlike the old Gitea backend, there are **no Helm hooks** — everything is created in
+the normal install phase:
 
-1. **weight `"0"`** — `<fullname>-oc-token` Secret: stores `.Values.openshift.token`
-   (passed via `--set openshift.token=...`, never committed to the repo).
-2. **weight `"1"`** — `<fullname>-gitea-setup` ConfigMap: contains `setup.sh`, which
-   embeds `charts/workshop/files/starter-app/app.py` and `requirements.txt` as base64
-   (via Helm's `.Files.Get` + `b64enc` at render time — the source files themselves are
-   normal, editable text, not hand-encoded).
-3. **weight `"2"`** — `<fullname>-gitea-setup` Job: mounts the ConfigMap as a script and
-   the token Secret as a volume, then runs `setup.sh` (image: `curlimages/curl`).
+1. The `<fullname>-gitserver` **BuildConfig** (Docker strategy) builds the UBI git
+   image from `files/gitserver/Containerfile` into the `<fullname>-gitserver`
+   ImageStream. It has a `ConfigChange` trigger, so it builds on install.
+2. The `<fullname>-gitserver` **Deployment** runs the built image; an
+   `image.openshift.io/triggers` annotation rolls it once the image lands. It mounts the
+   repo **PVC**, the `<fullname>-oc-token` **Secret** (as the `OC_TOKEN` env var), and the
+   starter-files **ConfigMap**, then runs `start.sh`.
+3. The dev/prod app **BuildConfigs**, **ImageStreams**, **Deployments**, **Services**,
+   and **Routes** are created too, and wait for their images (which `start.sh` triggers).
 
-All three run after the Gitea Deployment/Service/Route/PVC and the BuildConfigs/
-ImageStreams are created by the normal (non-hook) install phase, since Helm installs
-hookless resources first, then runs post-install hooks in weight order.
+The `<fullname>-oc-token` Secret is now a **normal resource** (not a hook), because the
+git server Deployment needs the token available at deploy time.
 
-### What `setup.sh` does
+### What `start.sh` does
 
-1. Polls `http://<fullname>-gitea:3000/api/v1/swagger` until Gitea answers.
-2. Creates the `starter-flask-app` repo under the admin account (`auto_init: true`).
-3. Reads the repo's actual default branch (`main` or `master` depending on Gitea's
-   config) rather than assuming a name.
-4. Uploads `app.py` and `requirements.txt` to that default branch via the Gitea
-   Contents API, which expects file content as base64 — the ConfigMap carries the
-   pre-encoded payload (built from `files/starter-app/` at `helm template`/`install`
-   time) so the Job itself never needs a base64 decode/encode step, only `curl`.
-5. Creates a `dev` branch from the default branch. If `.Values.memberCount` is `>= 2`,
-   also creates one branch per developer (`member1`..`memberN`) off `dev`, so each
-   member of a multi-developer team has their own branch to work in and merge back into
-   `dev`. These branches don't match the BuildConfig webhook `branch_filter`, so pushing
-   to them triggers no build — only merging into `dev` does. Default `memberCount: 1`
-   (solo) creates no member branches.
-6. Registers two Gitea webhooks against the **external OpenShift API server**
-   (`.Values.openshift.apiServer`), pointed at each BuildConfig's generic webhook
-   endpoint (`.../buildconfigs/<fullname>-dev/webhooks/<webhookSecret>/generic`),
-   authenticated with `Authorization: Bearer <oc token>` since the sandbox's RBAC
-   rejects the unauthenticated in-cluster path Gitea would normally use.
-7. Fires each of those same generic webhook URLs directly (up to 3 retries), the way
-   Gitea itself would on a push. This step exists because steps 4-5 seed the repo via
-   Gitea's Contents API, not a real `git push` — so the webhooks registered in step 6
-   have nothing to retroactively fire on, and without this the `dev`/`prod` BuildConfigs
-   would never get a first build.
+Runs as the git server's entrypoint (`files/gitserver/start.sh`, mounted from a
+ConfigMap). All values come from environment variables set by the Deployment, so the
+script needs no Helm templating:
 
-Because every step is idempotent-ish (`|| echo "... might already exist"`), rerunning
-`helm upgrade` or reinstalling is safe — failures to re-create existing objects don't
-fail the Job.
+1. Configures and starts **`httpd`** (`git-http-backend` CGI on port 8080) in the
+   background, so a build can clone the repo the moment it is triggered.
+2. Initializes the **bare repo** `/var/git/<repoName>.git` on the PVC, with
+   `http.receivepack`/`http.uploadpack` enabled and `HEAD` set to `main`.
+3. **Seeds** `app.py` and `requirements.txt` (from the mounted starter ConfigMap) onto
+   `main`, then creates `dev`. If `.Values.memberCount >= 2`, also creates `member1`..
+   `memberN` off `dev` — this is done **before** the hook is installed, so these seed
+   pushes do **not** fire any webhook.
+4. Installs the server-side **`post-receive` hook** with the OC token and the dev/prod
+   generic-webhook URLs baked in (Apache does not pass env to CGI children, so the values
+   are written into the hook file). The hook routes: push to `dev` → dev BuildConfig
+   webhook, push to `main` → prod webhook, any other branch (e.g. `memberN`) → no build.
+5. Waits until the repo is reachable over the **Service** (HTTP 200 on
+   `info/refs?service=git-upload-pack`), i.e. this pod is Ready and has a Service
+   endpoint, then **triggers the initial dev and prod builds** by calling the same
+   webhooks directly. Gating on Service reachability avoids a race where a build clones
+   before the server is serving.
+6. Leaves `httpd` running (`wait`).
+
+Re-running is safe: the repo-init/seed block is guarded by `if [ ! -d <repo> ]`, so a
+pod restart with a retained PVC skips straight to serving.
 
 ## Build → deploy wiring
 
@@ -125,23 +129,23 @@ fail the Job.
   (`image-registry.openshift-image-registry.svc:5000/<namespace>/<fullname>-<env>:latest`)
   rather than a public registry, so no pull secret is required for the app images.
 - `BuildConfig` triggers are `type: Generic` (webhook-driven only) — there's no
-  `ImageChange` or `ConfigChange` trigger. Builds happen either from a real subsequent
-  Gitea-triggered push, or from the setup Job's one-time direct call (step 7 above)
-  that covers the very first build.
+  `ImageChange` or `ConfigChange` trigger. A build fires either from a participant's
+  `git push` (via the `post-receive` hook) or from `start.sh`'s one-time gated call that
+  covers the very first build.
 
 ## Configuration surface (`values.yaml`)
 
 | Key | Purpose |
 |---|---|
-| `openshift.apiServer` | External API server URL the Gitea webhook calls into |
-| `openshift.token` | OC token for webhook auth; set via `--set`, never committed |
-| `gitea.image.*`, `gitea.resources`, `gitea.persistence.*` | Gitea container/image/storage sizing |
-| `gitea.admin.*` | Gitea admin username/password/email (also used as the repo owner) |
+| `openshift.apiServer` | External API server URL the `post-receive` hook calls into |
+| `openshift.token` | OC token for the build-trigger auth; set via `--set`, never committed |
+| `gitServer.service.*`, `gitServer.resources`, `gitServer.persistence.*` | Git server service/sizing/storage |
+| `gitServer.admin.*` | Shared push credential (used for basic-auth in a later phase; Phase 1 is anonymous push) |
 | `starterApp.dev` / `starterApp.prod` | Replica count + resource requests/limits per environment |
-| `memberCount` | Team size; if `>= 2`, the setup Job pre-creates `member1`..`memberN` branches off `dev` (default `1` = solo, none created) |
+| `memberCount` | Team size; if `>= 2`, `start.sh` pre-creates `member1`..`memberN` branches off `dev` (default `1` = solo, none created) |
 | `build.builderImage` | S2I builder image (UBI8 Python 3.9 by default) |
 | `build.successfulBuildsHistoryLimit` / `failedBuildsHistoryLimit` | Build pruning, kept low for sandbox quota |
-| `build.repoName` | Gitea repo name created by the setup Job |
+| `build.repoName` | Name of the bare repo the git server serves |
 | `build.webhookSecret` | Shared secret in the BuildConfig generic webhook path |
 
 `values-enterprise.yaml` (repo root) overrides these for a non-sandbox cluster: Nexus
@@ -154,20 +158,28 @@ All resource names derive from `workshop.fullname` (the release name, or
 `<release>-<chart>` if the release name doesn't already contain the chart name — see
 `_helpers.tpl`). With the documented `helm install workshop-poc charts/workshop`
 this resolves to `workshop-poc`, so e.g. the dev Route is `workshop-poc-dev` and the
-Gitea PVC is `workshop-poc-gitea`.
+git server PVC is `workshop-poc-gitserver`.
 
 ## Known limitations (POC scope)
 
 These are intentional for a single-namespace sandbox POC — see
 [FUTURE.md](FUTURE.md) for the enterprise/multi-team roadmap:
 
-- Single replica for Gitea and (by default) for prod; no HA.
-- SQLite backing store for Gitea — fine for one small repo, not for concurrent teams.
-- Gitea admin password and the BuildConfig webhook secret ship as plaintext defaults
-  in `values.yaml`, intended to be overridden per deployment rather than treated as
-  real secrets.
-- Gitea's `GITEA__webhook__SKIP_TLS_VERIFY: true` disables TLS verification for
-  outbound webhook calls — acceptable for the sandbox's self-signed setup, not for a
-  production cluster with a trusted CA.
+- **No web UI.** The git server is a plain repository served over HTTP; participants
+  work entirely from the command line (clone / commit / push). There is no code-browsing
+  or repo-management UI.
+- **Anonymous push (Phase 1).** Clone and push currently require no authentication.
+  Basic-auth (htpasswd) enforcement on push is a later phase; the `gitServer.admin`
+  credential is reserved for it.
+- **Single replica** for the git server and (by default) for prod; no HA. No database —
+  repos are plain files on a `ReadWriteOnce` PVC.
+- **The git image is built in-cluster** from `Containerfile`, which needs egress to Red
+  Hat package repos at build time. Air-gapped clusters must mirror the base image + repos
+  or supply a pre-built image (see [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md)).
+- The BuildConfig webhook secret ships as a plaintext default in `values.yaml`, intended
+  to be overridden per deployment rather than treated as a real secret.
+- The `post-receive` hook calls the external API server with `curl -k` (TLS verification
+  skipped) — acceptable for the sandbox's self-signed setup, not for a production cluster
+  with a trusted CA.
 - No `ClusterRole`/`ClusterRoleBindings` or other cluster-scoped resources — the chart
   only creates namespace-scoped objects, matching sandbox RBAC restrictions.

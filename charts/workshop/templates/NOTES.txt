@@ -1,12 +1,14 @@
-1. Get the Gitea URL by running:
-  oc get route {{ include "workshop.fullname" . }}-gitea -o jsonpath='https://{.spec.host}{"\n"}'
+1. Get the Git server URL by running:
+  oc get route {{ include "workshop.fullname" . }}-gitserver -o jsonpath='https://{.spec.host}{"\n"}'
 
-2. Gitea Admin Credentials:
-  Username: {{ .Values.gitea.admin.username }}
-  Password: {{ .Values.gitea.admin.password }}
+   Clone the starter repo from:
+     https://<git-server-host>/git/{{ .Values.build.repoName }}.git
+   Push credential (shared): {{ .Values.gitServer.admin.username }} / {{ .Values.gitServer.admin.password }}
 
-3. Get the Dev App URL (once deployed):
+2. Get the Dev App URL (once built & deployed):
   oc get route {{ include "workshop.fullname" . }}-dev -o jsonpath='https://{.spec.host}{"\n"}'
 
-4. Get the Prod App URL (once deployed):
+3. Get the Prod App URL (once built & deployed):
   oc get route {{ include "workshop.fullname" . }}-prod -o jsonpath='https://{.spec.host}{"\n"}'
+
+Push to the `dev` branch to build & deploy the Dev site; merge to `main` and push for Prod.
