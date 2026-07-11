@@ -54,14 +54,19 @@ Before installing the Helm chart, configure your namespace with the necessary re
    oc secrets link default nexus-registry-credentials --for=pull
    oc secrets link builder nexus-registry-credentials --for=pull
    ```
-4. **Git server image build (air-gap note):**
-   The git server runs a small UBI-based image (`git` + `httpd`) that the chart **builds
-   in-cluster** from `charts/workshop/files/gitserver/Containerfile`. That build pulls
-   `ubi9/ubi-minimal` and installs `git-core`/`httpd`, so it needs egress to Red Hat's
-   image and package repositories at build time. On an air-gapped cluster, either mirror
-   the UBI base image and repos, or pre-build the image and push it to your registry
-   (wiring a pre-built image into the git server Deployment is on the roadmap — see
-   [FUTURE.md](FUTURE.md)).
+4. **Git server image (in-cluster build vs. pre-built):**
+   The git server runs a small UBI-based image (`git` + `httpd`). By default
+   (`gitServer.build.enabled: true`) the chart **builds it in-cluster** from
+   `charts/workshop/files/gitserver/Containerfile` — that build pulls `ubi9/ubi-minimal`
+   and installs `git-core`/`httpd`, so it needs egress to Red Hat's image and package
+   repositories at build time.
+
+   **For an air-gapped cluster, use a pre-built image instead:** build the image once
+   from that `Containerfile` where you have Red Hat repo access, push it to your registry,
+   and set `gitServer.build.enabled: false` with `gitServer.image.repository`/`tag` (and
+   `gitServer.image.pullSecrets`). The chart then skips the in-cluster BuildConfig/ImageStream
+   and runs your image directly. `values-enterprise.yaml` ships this pre-built path as the
+   default example.
 
 ---
 
@@ -70,10 +75,12 @@ Before installing the Helm chart, configure your namespace with the necessary re
 Edit the template [values-enterprise.yaml](values-enterprise.yaml) in the root of the project to match your infrastructure requirements:
 
 1. **API Server (required):** Set `openshift.apiServer` to your enterprise cluster's API server URL. This ships blank in `values-enterprise.yaml` on purpose — if left unset, the git server's build-trigger hook has no valid target and builds will never fire. Pass it explicitly, e.g. `--set openshift.apiServer=https://api.openshift.company.com:6443`.
-2. **Registry Domains:** Update the repository URLs to point to your Nexus domain (e.g. `nexus.company.com`).
-3. **Storage Class:** Set `gitServer.persistence.storageClass` to your company's storage provisioner (e.g. `gp3`, `thin`, `ocs-storagecluster-cephfs`).
-4. **Resource Scale:** Customize CPU/Memory requests and limits to fit your team size.
-5. **Replicas:** Set production application replica count to high availability levels (e.g., `replicas: 3`).
+2. **Registry Domains:** Update the repository URLs to point to your Nexus domain (e.g. `nexus.company.com`) — the S2I `build.builderImage` and, if using the pre-built path, `gitServer.image.repository`.
+3. **Git server image:** `values-enterprise.yaml` defaults to the **pre-built** path (`gitServer.build.enabled: false` + `gitServer.image.*`). Point `gitServer.image.repository`/`tag` at the git server image you pushed to Nexus. (To build in-cluster instead, set `gitServer.build.enabled: true` and remove `gitServer.image`.)
+4. **Push credential:** Cloning is anonymous, but pushing requires the shared `gitServer.admin` credential (htpasswd basic-auth). Set `gitServer.admin.username`/`password` — participants get these in their handout.
+5. **Storage Class:** Set `gitServer.persistence.storageClass` to your company's storage provisioner (e.g. `gp3`, `thin`, `ocs-storagecluster-cephfs`).
+6. **Resource Scale:** Customize CPU/Memory requests and limits to fit your team size.
+7. **Replicas:** Set production application replica count to high availability levels (e.g., `replicas: 3`).
 
 ---
 

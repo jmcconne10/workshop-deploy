@@ -42,7 +42,7 @@ The chart builds a small UBI git-server image in-cluster (`git` + `httpd`), then
 3. Installs a server-side **`post-receive` hook** that triggers the OpenShift S2I BuildConfigs — push to `dev` builds/deploys **dev**, push to `main` builds/deploys **prod**.
 4. Once it's serving over its Route, triggers the initial dev/prod builds so both sites come up automatically.
 
-There is no web UI and no database — it's a plain git server, and (in this phase) clone/push require no login.
+There is no web UI and no database — it's a plain git server. Cloning is anonymous; **pushing requires** the shared `gitServer.admin` credential (default `workshop-admin` / `WorkshopAdminPassword123!`).
 
 ---
 
@@ -51,7 +51,7 @@ There is no web UI and no database — it's a plain git server, and (in this pha
 ### 1. Retrieve Route URLs
 Get the git clone URL and the Flask app URLs:
 ```bash
-# Git clone URL (no login required)
+# Git clone URL (clone is anonymous; push needs the gitServer.admin credential)
 oc get route workshop-poc-gitserver -o jsonpath='https://{.spec.host}/git/starter-flask-app.git{"\n"}'
 
 # Get Dev App URL (runs from the dev branch)
@@ -61,7 +61,7 @@ oc get route workshop-poc-dev -o jsonpath='https://{.spec.host}{"\n"}'
 oc get route workshop-poc-prod -o jsonpath='https://{.spec.host}{"\n"}'
 ```
 
-The git server is a plain repository (no web UI); no credentials are needed to clone or push.
+The git server is a plain repository (no web UI). Cloning is anonymous; pushing prompts for the shared `gitServer.admin` credential (default `workshop-admin` / `WorkshopAdminPassword123!`).
 
 ---
 
@@ -69,7 +69,7 @@ The git server is a plain repository (no web UI); no credentials are needed to c
 
 The repository is **already seeded** by the git server on startup — it contains `app.py`
 (a small Flask site) and `requirements.txt`, and already has a `dev` branch. You don't
-create these files; you edit what's there and push (no login required). To verify the
+create these files; you edit what's there and push (git prompts for the shared push credential). To verify the
 automated build-and-deploy flow:
 
 1. **Clone the seeded repo locally** (use the git clone URL from step 1):

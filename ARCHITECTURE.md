@@ -140,7 +140,9 @@ pod restart with a retained PVC skips straight to serving.
 | `openshift.apiServer` | External API server URL the `post-receive` hook calls into |
 | `openshift.token` | OC token for the build-trigger auth; set via `--set`, never committed |
 | `gitServer.service.*`, `gitServer.resources`, `gitServer.persistence.*` | Git server service/sizing/storage |
-| `gitServer.admin.*` | Shared push credential (used for basic-auth in a later phase; Phase 1 is anonymous push) |
+| `gitServer.build.enabled` | Build the git image in-cluster (default `true`); set `false` to run a pre-built image |
+| `gitServer.image.*` | Pre-built git server image (repo/tag/pullSecrets), used when `build.enabled: false` |
+| `gitServer.admin.*` | Shared push credential enforced via htpasswd basic-auth on `git-receive-pack` (clone stays anonymous) |
 | `starterApp.dev` / `starterApp.prod` | Replica count + resource requests/limits per environment |
 | `memberCount` | Team size; if `>= 2`, `start.sh` pre-creates `member1`..`memberN` branches off `dev` (default `1` = solo, none created) |
 | `build.builderImage` | S2I builder image (UBI8 Python 3.9 by default) |
@@ -168,14 +170,17 @@ These are intentional for a single-namespace sandbox POC — see
 - **No web UI.** The git server is a plain repository served over HTTP; participants
   work entirely from the command line (clone / commit / push). There is no code-browsing
   or repo-management UI.
-- **Anonymous push (Phase 1).** Clone and push currently require no authentication.
-  Basic-auth (htpasswd) enforcement on push is a later phase; the `gitServer.admin`
-  credential is reserved for it.
+- **Anonymous clone, authenticated push.** Cloning/fetching is anonymous (so the S2I
+  BuildConfigs can clone the repo without credentials); pushing (`git-receive-pack`)
+  requires the shared `gitServer.admin` credential, enforced by Apache basic-auth against
+  an htpasswd Secret. Auth is a **shared** account, not per-user — per-user identity is
+  future work (see [FUTURE.md](FUTURE.md)).
 - **Single replica** for the git server and (by default) for prod; no HA. No database —
   repos are plain files on a `ReadWriteOnce` PVC.
-- **The git image is built in-cluster** from `Containerfile`, which needs egress to Red
-  Hat package repos at build time. Air-gapped clusters must mirror the base image + repos
-  or supply a pre-built image (see [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md)).
+- **The git image is built in-cluster** by default from `Containerfile`, which needs
+  egress to Red Hat package repos at build time. Air-gapped clusters can set
+  `gitServer.build.enabled: false` and supply a pre-built `gitServer.image` instead (see
+  [ENTERPRISE_DEPLOY.md](ENTERPRISE_DEPLOY.md)).
 - The BuildConfig webhook secret ships as a plaintext default in `values.yaml`, intended
   to be overridden per deployment rather than treated as a real secret.
 - The `post-receive` hook calls the external API server with `curl -k` (TLS verification
