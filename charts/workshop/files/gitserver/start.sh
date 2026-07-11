@@ -28,10 +28,11 @@ SetEnv GIT_PROJECT_ROOT /var/git
 SetEnv GIT_HTTP_EXPORT_ALL
 ScriptAlias /git/ /usr/libexec/git-core/git-http-backend/
 
-# Require authentication for PUSH only. A push is either a POST to .../git-receive-pack
-# or the preceding GET .../info/refs?service=git-receive-pack — flag both. Clone/fetch
-# (git-upload-pack) stays anonymous so the S2I BuildConfigs can keep cloning.
-SetEnvIfExpr "%{QUERY_STRING} =~ /service=git-receive-pack/ || %{REQUEST_URI} =~ m#/git-receive-pack$#" GIT_PUSH
+# Require authentication for PUSH only. Flag CLONE/FETCH requests (git-upload-pack)
+# as anonymous-OK: the GET .../info/refs?service=git-upload-pack handshake and the
+# POST .../git-upload-pack. Everything else (i.e. git-receive-pack = push) falls
+# through to valid-user. This keeps anonymous clone working for the S2I BuildConfigs.
+SetEnvIfExpr "%{QUERY_STRING} =~ /service=git-upload-pack/ || %{REQUEST_URI} =~ m#/git-upload-pack$#" GIT_ANON
 
 <Directory "/usr/libexec/git-core">
   Options +ExecCGI
@@ -39,8 +40,8 @@ SetEnvIfExpr "%{QUERY_STRING} =~ /service=git-receive-pack/ || %{REQUEST_URI} =~
   AuthName "Git push (workshop credentials)"
   AuthUserFile /etc/git-secret/htpasswd
   <RequireAny>
-    # anonymous for everything that is not a push...
-    Require expr "! reqenv('GIT_PUSH')"
+    # anonymous for clone/fetch...
+    Require env GIT_ANON
     # ...and a valid user for pushes (git prompts for the credential on the 401)
     Require valid-user
   </RequireAny>
