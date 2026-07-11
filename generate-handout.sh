@@ -29,8 +29,13 @@ Welcome to the Hackathon, sponsored by the EKHO Team! Below are your repository 
 * **Your Dev Web Site:** [${DEV_URL}](${DEV_URL})
 * **Your Prod Web Site:** [${PROD_URL}](${PROD_URL})
 
+### Push Credentials
+Cloning is anonymous, but **pushing requires these shared credentials** (git will prompt on your first push):
+* **Username:** \`workshop-admin\`
+* **Password:** \`WorkshopAdminPassword123!\`
+
 > The git server is a plain git repository (no web UI). You interact with it entirely
-> from the command line. No login is required to clone or push.
+> from the command line.
 
 ---
 

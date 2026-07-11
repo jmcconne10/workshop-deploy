@@ -1,6 +1,8 @@
+{{- if .Values.gitServer.build.enabled }}
 apiVersion: image.openshift.io/v1
 kind: ImageStream
 metadata:
   name: {{ include "workshop.fullname" . }}-gitserver
   labels:
     {{- include "workshop.labels" . | nindent 4 }}
+{{- end }}

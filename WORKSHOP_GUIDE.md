@@ -51,7 +51,9 @@ the handout generator — it queries the routes for you and writes a ready-to-sh
 ```bash
 ./generate-handout.sh
 ```
-The git server is a plain repository (no web UI, no login) — participants clone and push
+The git server is a plain repository (no web UI). Cloning is anonymous; pushing prompts for
+the shared `gitServer.admin` credential (default `workshop-admin` / `WorkshopAdminPassword123!`,
+included in the handout). Participants clone and push
 over the git clone URL in the handout.
 
 Share the generated `HANDOUT.md` with the participant.
@@ -155,7 +157,7 @@ participants are being told without having to go dig it out of a template file.
 In short, a participant:
 
 1. **Clones their starter repo** from the git server using the clone URL in their
-   handout (no login required) — pre-populated with `app.py` (a simple Flask app) and `requirements.txt`.
+   handout (clone is anonymous) — pre-populated with `app.py` (a simple Flask app) and `requirements.txt`.
 2. **Pushes changes to the `dev` branch** → OpenShift automatically builds and
    deploys the update to their **Dev Web Site**.
 3. **Merges `dev` into `main` and pushes** → OpenShift automatically builds and

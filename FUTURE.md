@@ -37,8 +37,8 @@ provisioning tooling has no visibility into or control over — cluster capacity
 for a live 20-team event should account for this separately from initial provisioning.
 
 ## 3. Corporate Security & Authentication
-- **Git push authentication:** Phase 1 of the git server allows **anonymous** clone/push. Add basic-auth (htpasswd) on push (Phase 2), and for enterprise, front the git server with an auth proxy or integrate push auth with corporate identity (LDAP/Keycloak/AD) so pushes are authenticated per user.
-- **Pre-built git server image (air-gap):** The git server image is currently built in-cluster from a UBI `Containerfile`, which needs egress to Red Hat package repos. For air-gapped clusters, add a values path to consume a **pre-built image** pushed to the internal registry instead of building it.
+- **Git push authentication:** _Done (Phase 2)_ — pushing now requires a shared credential via htpasswd basic-auth (clone stays anonymous). **Still future:** per-user auth — front the git server with an auth proxy or integrate push auth with corporate identity (LDAP/Keycloak/AD) so pushes are attributed to individuals rather than a shared account.
+- **Pre-built git server image (air-gap):** _Done (Phase 4)_ — `gitServer.build.enabled: false` + `gitServer.image.*` runs a pre-built image instead of building in-cluster; `values-enterprise.yaml` ships this as the default. **Still future:** automate building/mirroring that image into the customer registry as part of an enterprise install pipeline.
 - **Secrets Management:** Transition from manual secret generation to an enterprise secrets manager (e.g., HashiCorp Vault or OpenShift GitOps/ArgoCD integration with external secrets).
 
 ## 4. Monitoring & Resource Controls

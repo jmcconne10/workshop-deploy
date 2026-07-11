@@ -4,8 +4,10 @@ metadata:
   name: {{ include "workshop.fullname" . }}-gitserver
   labels:
     {{- include "workshop.labels" . | nindent 4 }}
+  {{- if .Values.gitServer.build.enabled }}
   annotations:
     image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"{{ include "workshop.fullname" . }}-gitserver:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"gitserver\")].image"}]'
+  {{- end }}
 spec:
   replicas: 1
   selector:
@@ -18,12 +20,22 @@ spec:
       labels:
         app: {{ include "workshop.name" . }}-gitserver
     spec:
+      {{- if and (not .Values.gitServer.build.enabled) .Values.gitServer.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.gitServer.image.pullSecrets | nindent 8 }}
+      {{- end }}
       containers:
         - name: gitserver
+          {{- if .Values.gitServer.build.enabled }}
           # Built in-cluster from files/gitserver/Containerfile into the -gitserver
           # ImageStream; the trigger annotation above rolls this once the build lands.
           image: image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}/{{ include "workshop.fullname" . }}-gitserver:latest
           imagePullPolicy: Always
+          {{- else }}
+          # Pre-built image supplied via gitServer.image (build.enabled=false).
+          image: "{{ .Values.gitServer.image.repository }}:{{ .Values.gitServer.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.gitServer.image.pullPolicy | default "IfNotPresent" }}
+          {{- end }}
           command: ["/bin/bash", "/scripts/start.sh"]
           securityContext:
             runAsNonRoot: true
@@ -68,6 +80,9 @@ spec:
               mountPath: /scripts
             - name: starter
               mountPath: /starter
+            - name: git-auth
+              mountPath: /etc/git-secret
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /git/{{ .Values.build.repoName }}.git/info/refs?service=git-upload-pack
@@ -90,3 +105,6 @@ spec:
         - name: starter
           configMap:
             name: {{ include "workshop.fullname" . }}-gitserver-starter
+        - name: git-auth
+          secret:
+            secretName: {{ include "workshop.fullname" . }}-gitserver-auth

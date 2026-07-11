@@ -27,9 +27,24 @@ Listen 8080
 SetEnv GIT_PROJECT_ROOT /var/git
 SetEnv GIT_HTTP_EXPORT_ALL
 ScriptAlias /git/ /usr/libexec/git-core/git-http-backend/
+
+# Require authentication for PUSH only. Flag CLONE/FETCH requests (git-upload-pack)
+# as anonymous-OK: the GET .../info/refs?service=git-upload-pack handshake and the
+# POST .../git-upload-pack. Everything else (i.e. git-receive-pack = push) falls
+# through to valid-user. This keeps anonymous clone working for the S2I BuildConfigs.
+SetEnvIfExpr "%{QUERY_STRING} =~ /service=git-upload-pack/ || %{REQUEST_URI} =~ m#/git-upload-pack$#" GIT_ANON
+
 <Directory "/usr/libexec/git-core">
-  Require all granted
   Options +ExecCGI
+  AuthType Basic
+  AuthName "Git push (workshop credentials)"
+  AuthUserFile /etc/git-secret/htpasswd
+  <RequireAny>
+    # anonymous for clone/fetch...
+    Require env GIT_ANON
+    # ...and a valid user for pushes (git prompts for the credential on the 401)
+    Require valid-user
+  </RequireAny>
 </Directory>
 CONF
 sed -i 's/^Listen 80$/#Listen 80/' /etc/httpd/conf/httpd.conf || true

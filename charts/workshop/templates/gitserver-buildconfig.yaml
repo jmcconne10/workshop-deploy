@@ -1,8 +1,9 @@
 {{- /*
 Builds the UBI-based git server image from files/gitserver/Containerfile.
-Enterprise/air-gap can skip this build and supply a pre-built image via
-gitServer.image.repository (see gitserver-deployment.yaml) — that path is Phase 4.
+Only rendered when gitServer.build.enabled is true. When false, the chart runs a
+pre-built image from gitServer.image instead (see gitserver-deployment.yaml).
 */ -}}
+{{- if .Values.gitServer.build.enabled }}
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
@@ -24,3 +25,4 @@ spec:
     - type: ConfigChange
   successfulBuildsHistoryLimit: {{ .Values.build.successfulBuildsHistoryLimit | default 2 }}
   failedBuildsHistoryLimit: {{ .Values.build.failedBuildsHistoryLimit | default 2 }}
+{{- end }}

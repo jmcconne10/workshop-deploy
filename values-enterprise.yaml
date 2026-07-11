@@ -13,41 +13,43 @@ global:
 # ---------------------------------------------------------------------
 openshift:
   # REQUIRED: set to your enterprise cluster's API server. If left as the chart
-  # default (the Developer Sandbox's API server), the Gitea webhook will call the
-  # wrong cluster and silently fail to trigger builds. Always pass explicitly, e.g.
-  #   --set openshift.apiServer=https://api.openshift.company.com:6443
+  # default (the Developer Sandbox's API server), the git server's post-receive hook
+  # will call the wrong cluster and silently fail to trigger builds. Always pass
+  # explicitly, e.g. --set openshift.apiServer=https://api.openshift.company.com:6443
   apiServer: ""
 
 # ---------------------------------------------------------------------
-# Gitea Enterprise Customizations
+# Git server Enterprise Customizations
 # ---------------------------------------------------------------------
-gitea:
+gitServer:
   enabled: true
+  # Enterprise/air-gap: run a PRE-BUILT git server image from your registry instead of
+  # building it in-cluster (the in-cluster build needs egress to Red Hat image/package
+  # repos). Build it once from charts/workshop/files/gitserver/Containerfile and push it
+  # to Nexus, then reference it here.
+  build:
+    enabled: false
   image:
-    # Point to the internal Nexus container registry instead of Docker Hub
-    repository: nexus.company.com/repository/docker-hub/gitea/gitea
-    tag: 1.22.0-rootless
+    repository: nexus.company.com/repository/container-images/workshop/gitserver
+    tag: latest
     pullPolicy: IfNotPresent
-    # Image pull secret(s) for pulling the Gitea image from a private Nexus. Rendered
-    # into the Gitea Deployment's pod `imagePullSecrets`. The named secret must already
-    # exist in the namespace (see ENTERPRISE_DEPLOY.md Step 1). Leave empty/unset if the
-    # registry needs no auth or you link the secret to the `default` service account instead.
+    # Pull secret(s) for the pre-built image (rendered into the pod's imagePullSecrets).
+    # The named secret must already exist in the namespace (see ENTERPRISE_DEPLOY.md Step 1).
     pullSecrets:
       - name: nexus-registry-credentials
 
   service:
     type: ClusterIP
-    port: 3000
-    sshPort: 2222
+    port: 8080
 
-  # Scale up resources for enterprise load (more teams/repos)
+  # Modest bump for enterprise multi-team usage (the git server is lightweight — no DB).
   resources:
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 200m
+      memory: 256Mi
     limits:
-      cpu: "2"
-      memory: 2Gi
+      cpu: "1"
+      memory: 512Mi
 
   persistence:
     enabled: true
@@ -56,11 +58,11 @@ gitea:
     # (e.g., gp3, thin, ocs-storagecluster-cephfs, portworx)
     storageClass: "gp3"
 
+  # Shared push credential (cloning is anonymous; pushing requires this via htpasswd).
   admin:
     username: workshop-admin
     # Ensure a secure, custom password is set for production
     password: "SecureEnterprisePassword123!"
-    email: admin@company.com
 
 # ---------------------------------------------------------------------
 # Starter Flask Application (Production Scale-Up)
