@@ -27,9 +27,23 @@ Listen 8080
 SetEnv GIT_PROJECT_ROOT /var/git
 SetEnv GIT_HTTP_EXPORT_ALL
 ScriptAlias /git/ /usr/libexec/git-core/git-http-backend/
+
+# Require authentication for PUSH only. A push is either a POST to .../git-receive-pack
+# or the preceding GET .../info/refs?service=git-receive-pack — flag both. Clone/fetch
+# (git-upload-pack) stays anonymous so the S2I BuildConfigs can keep cloning.
+SetEnvIfExpr "%{QUERY_STRING} =~ /service=git-receive-pack/ || %{REQUEST_URI} =~ m#/git-receive-pack$#" GIT_PUSH
+
 <Directory "/usr/libexec/git-core">
-  Require all granted
   Options +ExecCGI
+  AuthType Basic
+  AuthName "Git push (workshop credentials)"
+  AuthUserFile /etc/git-secret/htpasswd
+  <RequireAny>
+    # anonymous for everything that is not a push...
+    Require expr "! reqenv('GIT_PUSH')"
+    # ...and a valid user for pushes (git prompts for the credential on the 401)
+    Require valid-user
+  </RequireAny>
 </Directory>
 CONF
 sed -i 's/^Listen 80$/#Listen 80/' /etc/httpd/conf/httpd.conf || true

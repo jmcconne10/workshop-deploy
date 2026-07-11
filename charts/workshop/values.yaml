@@ -26,6 +26,21 @@ openshift:
 # hook that triggers the dev/prod BuildConfig webhooks (replaces Gitea's webhook).
 gitServer:
   enabled: true
+  # Image build strategy.
+  #  build.enabled: true  (default) → the chart builds the git server image in-cluster
+  #    from files/gitserver/Containerfile (needs egress to Red Hat image/package repos).
+  #  build.enabled: false → skip the in-cluster build and run a PRE-BUILT image from
+  #    `image` below (for air-gapped/enterprise clusters — build it once and push it to
+  #    your registry).
+  build:
+    enabled: true
+  image:
+    # Only used when build.enabled is false. Point at your pre-built git server image.
+    repository: ""
+    tag: "latest"
+    pullPolicy: IfNotPresent
+    # Pull secret(s) for the pre-built image, rendered into imagePullSecrets.
+    pullSecrets: []
   service:
     type: ClusterIP
     port: 8080
@@ -41,8 +56,8 @@ gitServer:
     size: 1Gi
     storageClass: ""
     keepOnUninstall: false
-  # Shared credential participants use to push. Phase 1 allows anonymous push;
-  # basic-auth enforcement (htpasswd) lands in Phase 2.
+  # Shared credential participants use to push. Cloning is anonymous; pushing
+  # (git-receive-pack) requires this credential via an htpasswd basic-auth check.
   admin:
     username: workshop-admin
     password: "WorkshopAdminPassword123!"
